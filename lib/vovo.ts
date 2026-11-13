@@ -80,8 +80,9 @@ export async function responderVovo(historico: FalaVovo[]): Promise<RespostaVovo
     const { dados } = await pedirJSON({
       sistema: PROMPT_VOVO,
       pedido: `Conversa até agora:\n${conversa}\n\nResponda como a Vó Zilda à última mensagem do golpista, no formato JSON pedido.`,
-      maxTokens: 600,
+      maxTokens: 1200,
       temperatura: 0.9,
+      raciocinio: "minimal",
     });
     const fala = String(dados.fala || "").trim().slice(0, 500);
     if (!fala) throw new Error("fala vazia");

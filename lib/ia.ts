@@ -14,9 +14,11 @@ interface Pedido {
   imagem?: Imagem;
   maxTokens?: number;
   temperatura?: number;
+  /** Quanto o modelo "pensa" antes de responder. Menos = mais rápido. */
+  raciocinio?: "minimal" | "low";
 }
 
-const TEMPO_LIMITE_MS = 18_000;
+const TEMPO_LIMITE_MS = 14_000;
 
 // Modelos tentados em ordem. O primeiro vem do .env; os outros são reserva.
 const MODELOS_GEMINI = ["gemini-3.6-flash", "gemini-3.5-flash-lite"];
@@ -54,26 +56,38 @@ async function chamarGemini(modelo: string, p: Pedido): Promise<string> {
   const partes: unknown[] = [];
   if (p.imagem) partes.push({ inlineData: { mimeType: p.imagem.mime, data: p.imagem.base64 } });
   partes.push({ text: p.pedido });
-
   const base = process.env.GEMINI_URL_BASE || "https://generativelanguage.googleapis.com"; // trocável só para testes
-  const r = await fetch(`${base}/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
-    method: "POST",
-    headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: p.sistema }] },
-      contents: [{ role: "user", parts: partes }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        temperature: p.temperatura ?? 0.2,
-        maxOutputTokens: p.maxTokens ?? 2000,
-      },
-    }),
-    signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
-  });
+
+  // Os modelos Gemini 3 "pensam" por padrão, o que deixa a resposta lenta.
+  // Pedimos pouco raciocínio; se o modelo recusar esse parâmetro, tentamos de novo sem ele.
+  const pedir = async (comRaciocinio: boolean) => {
+    const config: Record<string, unknown> = {
+      responseMimeType: "application/json",
+      temperature: p.temperatura ?? 0.2,
+      maxOutputTokens: p.maxTokens ?? 3000,
+    };
+    if (comRaciocinio) config.thinkingConfig = { thinkingLevel: p.raciocinio ?? "low" };
+    return fetch(`${base}/v1beta/models/${encodeURIComponent(modelo)}:generateContent`, {
+      method: "POST",
+      headers: { "content-type": "application/json", "x-goog-api-key": process.env.GEMINI_API_KEY! },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: p.sistema }] },
+        contents: [{ role: "user", parts: partes }],
+        generationConfig: config,
+      }),
+      signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+    });
+  };
+
+  let r = await pedir(true);
+  if (r.status === 400) r = await pedir(false);
   if (!r.ok) throw new Error(`Gemini ${modelo} ${r.status}: ${(await r.text()).slice(0, 200)}`);
   const j = await r.json();
-  const texto = (j?.candidates?.[0]?.content?.parts || []).map((x: { text?: string }) => x.text || "").join("");
-  if (!texto) throw new Error(`Gemini ${modelo}: resposta vazia`);
+  const texto = (j?.candidates?.[0]?.content?.parts || [])
+    .filter((x: { thought?: boolean }) => !x.thought)
+    .map((x: { text?: string }) => x.text || "")
+    .join("");
+  if (!texto) throw new Error(`Gemini ${modelo}: resposta vazia (${j?.candidates?.[0]?.finishReason || "sem motivo"})`);
   return texto;
 }
 
@@ -121,7 +135,9 @@ export async function pedirJSON(p: Pedido): Promise<{ dados: Record<string, unkn
         const texto = provedor === "gemini" ? await chamarGemini(modelo, p) : await chamarClaude(modelo, p);
         return { dados: extrairObjeto(texto), provedor: `${provedor} (${modelo})` };
       } catch (e) {
-        erros.push(e instanceof Error ? e.message : String(e));
+        const motivo = e instanceof Error ? e.message : String(e);
+        console.warn(`[anti-golpe] ${provedor}/${modelo} falhou, tentando o próximo:`, motivo.slice(0, 200));
+        erros.push(motivo);
       }
     }
   }
