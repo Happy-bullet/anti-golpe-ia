@@ -1,26 +1,57 @@
 # Base de testes
 
-`mensagens.csv` → colunas: `id, rotulo, tipo, origem, texto`
+`mensagens.csv` → colunas: `id, rotulo, tipo, origem, fonte, texto`
 
 - **rotulo:** `golpe` ou `legitimo`
 - **tipo:** categoria livre (falso parente, taxa correios, familia...)
-- **origem:** `real` (recebida por alguém de verdade) ou `sintetico` (escrita como exemplo)
+- **origem:**
+  - `publicado` = texto de golpe divulgado por imprensa, bancos, operadoras ou órgãos públicos. A coluna `fonte` tem o endereço da página.
+  - `real` = mensagem recebida por você, família ou amigos (com nomes e telefones apagados).
+  - `sintetico` = escrita pela equipe como exemplo.
+- **fonte:** endereço de onde o texto foi tirado (só para `publicado`).
 
-## ⚠️ Importante
-As 24 mensagens que já estão aqui são **exemplos sintéticos**, só pra testar se o script funciona.
-**Na Mostra, os números têm que vir de mensagens reais** (foi isso que o resumo da inscrição prometeu).
-O script mostra o resultado separado por origem, então dá pra ver os dois.
+## O que tem na base hoje (13/11/2026)
 
-## Como coletar mensagens reais
-1. Pedir no grupo da família / amigos: "me encaminha golpes que vocês receberam"
-2. Também vale: mensagens normais do seu próprio WhatsApp (pra base ter legítimas)
-3. **Antes de salvar, apague nomes, telefones, CPFs, chaves Pix** → troque por `[NOME]`, `[TELEFONE]`
-4. Meta: **30+ golpes reais e 30+ legítimas**
-5. Texto com vírgula ou quebra de linha vai entre aspas `"..."`; aspas dentro do texto viram `""`
+| Origem | Golpes | Legítimas |
+|---|---|---|
+| publicado | 25 | 1 |
+| sintetico | 12 | 26 |
+| real | 0 | 0 |
 
-Prints: se a mensagem só existe em print, salve a imagem em `prints/` e digite o texto no CSV.
+## Resultado medido em 13/11/2026 (site publicado, Gemini 3.6 Flash + regras)
+
+- **25 de 25** golpes publicados foram pegos (24 como "golpe", 1 como "suspeito").
+- **26 de 27** mensagens legítimas foram liberadas. O único alerta falso foi um pedido de Pix entre namorados, marcado como "suspeito".
+- No total, **63 de 64** (98,4%).
+- Só as regras locais, antes de qualquer ajuste: **3 de 25** golpes publicados. Depois de ajustadas com esses exemplos: 24 de 25.
+
+Arquivos:
+- `resultados-primeira-rodada.md` — sistema completo, antes de mexer em qualquer regra (é o número mais honesto)
+- `resultados.md` — sistema completo, versão atual
+- `resultados-regras-antes-do-ajuste.md` e `resultados-regras.md` — só as regras locais, antes e depois
+
+## Como falar desses números sem exagerar
+
+- Diga "25 de 25 golpes documentados", não "100% de acerto". Com 25 exemplos, o acerto real pode ser menor.
+- Os golpes publicados são os mais conhecidos. Golpe novo pode passar.
+- Alguns textos publicados são modelos divulgados pelos bancos, com "XXXX" no lugar do valor ou do telefone.
+- As mensagens legítimas são quase todas escritas pela equipe. Para fortalecer, acrescente mensagens normais do seu próprio celular com `origem` = `real`.
+- As regras locais foram ajustadas olhando esses mesmos golpes, então o "24 de 25" delas não vale como teste independente.
+
+## Como acrescentar mensagens reais
+
+1. Peça à família e aos amigos que encaminhem golpes que receberam.
+2. **Antes de salvar, apague nomes, telefones, CPFs e chaves Pix** → troque por `[NOME]`, `[TELEFONE]`.
+3. Texto com vírgula ou quebra de linha vai entre aspas `"..."`; aspas dentro do texto viram `""`.
+4. Rode de novo a avaliação.
 
 ## Rodar
+
 Dentro de `app/`:
-- `npm run testar-regras` → testa só as regras locais (não precisa de internet nem chave) → gera `resultados-regras.md`
-- `npm run dev` em um terminal e `npm run avaliar` em outro → testa o sistema completo (IA + regras) → gera `resultados.md`
+
+```powershell
+npm run testar-regras
+$env:URL="https://anti-golpe-ia.vercel.app"; npm run avaliar
+```
+
+A avaliação completa leva uns 6 minutos (há uma pausa entre as mensagens para não estourar a cota da IA).
