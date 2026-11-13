@@ -1,0 +1,60 @@
+{
+  "geradoEm": "13/11/2026",
+  "provedor": "",
+  "total": {
+    "vp": 36,
+    "vn": 27,
+    "fp": 0,
+    "fn": 1,
+    "total": 64,
+    "acuracia": "98.4%",
+    "precisao": "100.0%",
+    "sensibilidade": "97.3%",
+    "especificidade": "100.0%"
+  },
+  "reais": null,
+  "publicados": {
+    "vp": 24,
+    "vn": 1,
+    "fp": 0,
+    "fn": 1,
+    "total": 26,
+    "acuracia": "96.2%",
+    "precisao": "100.0%",
+    "sensibilidade": "96.0%",
+    "especificidade": "100.0%"
+  },
+  "sinteticos": {
+    "vp": 12,
+    "vn": 26,
+    "fp": 0,
+    "fn": 0,
+    "total": 38,
+    "acuracia": "100.0%",
+    "precisao": "100.0%",
+    "sensibilidade": "100.0%",
+    "especificidade": "100.0%"
+  },
+  "golpesDocumentados": {
+    "vp": 24,
+    "vn": 0,
+    "fp": 0,
+    "fn": 1,
+    "total": 25,
+    "acuracia": "96.0%",
+    "precisao": "100.0%",
+    "sensibilidade": "96.0%",
+    "especificidade": "—"
+  },
+  "legitimas": {
+    "vp": 0,
+    "vn": 27,
+    "fp": 0,
+    "fn": 0,
+    "total": 27,
+    "acuracia": "100.0%",
+    "precisao": "—",
+    "sensibilidade": "—",
+    "especificidade": "100.0%"
+  }
+}

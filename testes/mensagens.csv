@@ -1,25 +1,65 @@
-id,rotulo,tipo,origem,texto
-1,golpe,falso parente,sintetico,"Oi pai, esse é meu número novo, o outro deu problema. Salva aí. Preciso de um favor urgente, consegue me fazer um pix de 1.800? Amanhã te devolvo"
-2,golpe,falso parente,sintetico,"Mãe meu celular caiu na água, tô usando o de um amigo. Me empresta 500 reais pra pagar uma conta que vence hoje? Manda na chave aleatória que vou te passar"
-3,golpe,clonagem whatsapp,sintetico,"Olá! Aqui é da equipe da pesquisa de satisfação do Magalu. Para confirmar seu cadastro e receber o cupom, me informa o código de 6 dígitos que chegou por SMS"
-4,golpe,taxa correios,sintetico,"CORREIOS: Sua encomenda foi taxada pela Receita Federal. Pague a taxa de R$ 32,40 em até 24 horas para liberar a entrega: https://correios-entrega.xyz/pagar"
-5,golpe,falsa central,sintetico,"ITAU: Compra suspeita de R$ 2.799,00 em seu cartao final 4421. Caso nao reconheca ligue agora para nosso setor de fraude 0800 777 1923"
-6,golpe,falso premio,sintetico,"Parabéns! Você foi selecionado no sorteio de aniversário das Lojas Americanas e ganhou uma Smart TV. Resgate seu prêmio em: bit.ly/premio-tv-2026"
-7,golpe,emprego falso,sintetico,"Vaga home office! Ganhe de R$ 200 a R$ 800 por dia só curtindo vídeos no YouTube. Sem experiência. Chama no WhatsApp para começar hoje"
-8,golpe,divida falsa,sintetico,"SERASA: Seu CPF possui pendência e seu nome será negativado amanhã. Regularize com 90% de desconto: http://serasa-acordo.online/quitar"
-9,golpe,banco falso,sintetico,"Caixa: Seu acesso ao app foi bloqueado por segurança. Atualize seus dados em https://caixa-atualizacao.site para evitar o cancelamento da conta"
-10,golpe,falso comprovante,sintetico,"Oi, acabei de te mandar um pix de 350 mas era pra ser 35, errei o zero 😅 consegue me devolver os 315? Mandei o comprovante aí"
-11,golpe,gov falso,sintetico,"GOV.BR: Você tem valores a receber de R$ 1.247,30. Consulte e resgate agora informando seu CPF e dados bancários em valores-receber-gov.top"
-12,golpe,detran falso,sintetico,"DETRAN: Consta multa pendente no seu veículo. Pague até hoje com desconto para evitar suspensão da CNH. Acesse http://45.162.13.88/detran"
-13,legitimo,familia,sintetico,"Oi vó! Domingo a gente passa aí pro almoço, a mãe pediu pra avisar que vai levar a sobremesa. Beijos"
-14,legitimo,amigos,sintetico,"Mano, vai ter futebol quinta às 20h na quadra de sempre? Se for eu levo a bola"
-15,legitimo,trabalho,sintetico,"Bom dia pessoal, a reunião de hoje foi remarcada para as 15h. A pauta continua a mesma."
-16,legitimo,codigo legitimo,sintetico,"Seu código de verificação do WhatsApp é 482-913. Não compartilhe este código com ninguém."
-17,legitimo,entrega real,sintetico,"Mercado Livre: Seu pacote chega amanhã. Acompanhe pelo app ou em mercadolivre.com.br/vendas"
-18,legitimo,familia,sintetico,"Filho, chegou a conta de luz, deixei em cima da mesa. Paga quando der que depois eu acerto com você"
-19,legitimo,lembrete,sintetico,"Lembrete: sua consulta na Clínica São José está marcada para 20/11 às 9h. Responda 1 para confirmar ou 2 para remarcar."
-20,legitimo,amigos,sintetico,"Te mandei o pix do rolê de sábado, 45 conto certinho. Valeu por pagar a conta"
-21,legitimo,faculdade,sintetico,"Galera, o professor liberou a nota da N1 no portal. Quem não viu dá uma olhada lá"
-22,legitimo,banco real,sintetico,"Nubank: Compra aprovada no crédito de R$ 23,90 em PADARIA PAO QUENTE. Se não reconhecer, entre em contato pelo app."
-23,legitimo,familia,sintetico,"Pai, consegue me buscar na faculdade hoje às 22h? Meu ônibus não vai passar"
-24,legitimo,promocao real,sintetico,"Ifood: Hoje tem frete grátis nos restaurantes parceiros até meia-noite. Peça pelo app!"
+id,rotulo,tipo,origem,fonte,texto
+1,golpe,falso parente,sintetico,,"Oi pai, esse é meu número novo, o outro deu problema. Salva aí. Preciso de um favor urgente, consegue me fazer um pix de 1.800? Amanhã te devolvo"
+2,golpe,falso parente,sintetico,,"Mãe meu celular caiu na água, tô usando o de um amigo. Me empresta 500 reais pra pagar uma conta que vence hoje? Manda na chave aleatória que vou te passar"
+3,golpe,clonagem whatsapp,sintetico,,"Olá! Aqui é da equipe da pesquisa de satisfação do Magalu. Para confirmar seu cadastro e receber o cupom, me informa o código de 6 dígitos que chegou por SMS"
+4,golpe,taxa correios,sintetico,,"CORREIOS: Sua encomenda foi taxada pela Receita Federal. Pague a taxa de R$ 32,40 em até 24 horas para liberar a entrega: https://correios-entrega.xyz/pagar"
+5,golpe,falsa central,sintetico,,"ITAU: Compra suspeita de R$ 2.799,00 em seu cartao final 4421. Caso nao reconheca ligue agora para nosso setor de fraude 0800 777 1923"
+6,golpe,falso premio,sintetico,,Parabéns! Você foi selecionado no sorteio de aniversário das Lojas Americanas e ganhou uma Smart TV. Resgate seu prêmio em: bit.ly/premio-tv-2026
+7,golpe,emprego falso,sintetico,,Vaga home office! Ganhe de R$ 200 a R$ 800 por dia só curtindo vídeos no YouTube. Sem experiência. Chama no WhatsApp para começar hoje
+8,golpe,divida falsa,sintetico,,SERASA: Seu CPF possui pendência e seu nome será negativado amanhã. Regularize com 90% de desconto: http://serasa-acordo.online/quitar
+9,golpe,banco falso,sintetico,,Caixa: Seu acesso ao app foi bloqueado por segurança. Atualize seus dados em https://caixa-atualizacao.site para evitar o cancelamento da conta
+10,golpe,falso comprovante,sintetico,,"Oi, acabei de te mandar um pix de 350 mas era pra ser 35, errei o zero 😅 consegue me devolver os 315? Mandei o comprovante aí"
+11,golpe,gov falso,sintetico,,"GOV.BR: Você tem valores a receber de R$ 1.247,30. Consulte e resgate agora informando seu CPF e dados bancários em valores-receber-gov.top"
+12,golpe,detran falso,sintetico,,DETRAN: Consta multa pendente no seu veículo. Pague até hoje com desconto para evitar suspensão da CNH. Acesse http://45.162.13.88/detran
+13,legitimo,familia,sintetico,,"Oi vó! Domingo a gente passa aí pro almoço, a mãe pediu pra avisar que vai levar a sobremesa. Beijos"
+14,legitimo,amigos,sintetico,,"Mano, vai ter futebol quinta às 20h na quadra de sempre? Se for eu levo a bola"
+15,legitimo,trabalho,sintetico,,"Bom dia pessoal, a reunião de hoje foi remarcada para as 15h. A pauta continua a mesma."
+16,legitimo,codigo legitimo,sintetico,,Seu código de verificação do WhatsApp é 482-913. Não compartilhe este código com ninguém.
+17,legitimo,entrega real,sintetico,,Mercado Livre: Seu pacote chega amanhã. Acompanhe pelo app ou em mercadolivre.com.br/vendas
+18,legitimo,familia,sintetico,,"Filho, chegou a conta de luz, deixei em cima da mesa. Paga quando der que depois eu acerto com você"
+19,legitimo,lembrete,sintetico,,Lembrete: sua consulta na Clínica São José está marcada para 20/11 às 9h. Responda 1 para confirmar ou 2 para remarcar.
+20,legitimo,amigos,sintetico,,"Te mandei o pix do rolê de sábado, 45 conto certinho. Valeu por pagar a conta"
+21,legitimo,faculdade,sintetico,,"Galera, o professor liberou a nota da N1 no portal. Quem não viu dá uma olhada lá"
+22,legitimo,banco real,sintetico,,"Nubank: Compra aprovada no crédito de R$ 23,90 em PADARIA PAO QUENTE. Se não reconhecer, entre em contato pelo app."
+23,legitimo,familia,sintetico,,"Pai, consegue me buscar na faculdade hoje às 22h? Meu ônibus não vai passar"
+24,legitimo,promocao real,sintetico,,Ifood: Hoje tem frete grátis nos restaurantes parceiros até meia-noite. Peça pelo app!
+101,golpe,taxa correios,publicado,https://tribunademinas.com.br/colunas/maistendencias/?p=867,Correios: Informamos que sua encomenda foi retida para anlise pela fiscalizao alfandegria. Consulte detalhes acessando: pedidobarrado.com.
+102,golpe,taxa correios,publicado,https://neon.com.br/aprenda/seguranca-digital/golpe-dos-correios/,"Correios: informamos que seu pedido foi barrado pela fiscalização alfandegária. Para mais informações, acesse: [link]"
+103,golpe,taxa correios,publicado,https://neon.com.br/aprenda/seguranca-digital/golpe-dos-correios/,Correios: temos uma atualização sobre seu pacote. Ele foi taxado e está aguardando retirada. Saiba mais: [link]
+104,golpe,taxa correios,publicado,https://neon.com.br/aprenda/seguranca-digital/golpe-dos-correios/,Correios: sua encomenda está retida. Pague a taxa para liberar a entrega. Acesse: [link]
+105,golpe,taxa correios,publicado,https://neon.com.br/aprenda/seguranca-digital/golpe-dos-correios/,CorreiosAviso: informamos que seu pedido foi parado pela fiscalização. Para mais informações ou rastreio: [link]
+106,golpe,falsa central,publicado,https://vivo.com.br/para-voce/ajuda/duvidas/fraude/mensagens-texto,"PIX de 1.000,00 em análise efetuado hoje. Caso não tenha efetuado entre em contato com a nossa central 0800 XXX XXXX"
+107,golpe,pontos expirando,publicado,https://vivo.com.br/para-voce/ajuda/duvidas/fraude/mensagens-texto,"Seus pontos expiram HOJE, troque por PRODUTOS ou MILHAS agora mesmo. Acesse http://m.trocarapidopontos.com"
+108,golpe,falsa central,publicado,https://www.infomoney.com.br/?p=2269970,"Compra aprovada em R$ XXXXX em (alguma loja do varejo conhecida). Para confirmar, digite o número 1. Caso desconheça a transação, ligue para a central (do banco) no número 0800 XXXXXX."
+109,golpe,falsa central,publicado,https://monitordomercado.com.br/noticias/341163-recebeu-um-sms-sobre-compra-de-r-2-000-nao-ligue-e-nao-digite-nada-pois-e-golpe/,"Compra de R$ 2.900,00 aprovada. Caso não reconheça, digite 1 ou ligue para o 0800…"
+110,golpe,falsa central,publicado,https://monitordomercado.com.br/noticias/330599-clientes-com-cartao-de-credito-santander-cuidado-com-o-golpe-da-compra-suspeita-que-te-faca-ligar-para-um-0800-falso/,"Compra aprovada nas Casas Bahia no valor de R$ 3.800,00. Caso não reconheça, ligue para 0800-XXX-XXXX"
+111,golpe,falsa central,publicado,https://monitordomercado.com.br/noticias/347670-se-voce-tem-conta-no-santander-nao-ligue-para-este-tipo-de-numero-0800-enviado-por-sms-sobre-uma-compra-falsa/,SANTANDER: Compra APROVADA Casas Bahia R$ 2.900. Ligue 0800-999-9999 para cancelar.
+112,golpe,falsa central,publicado,https://blog.nubank.com.br/golpe-do-sms/,"Acesso autorizado à sua conta, caso não reconheça, entre em contato"
+113,golpe,falsa central,publicado,https://blog.nubank.com.br/golpe-do-sms/,"Compra sob suspeita, digite 1 para confirmar ou ligue para cancelar"
+114,golpe,pontos expirando,publicado,https://tecnoblog.net/noticias/anatel-preve-acoes-de-combate-a-fraudes-com-sms-ainda-em-janeiro/,Dotz & BB: Resgate seus 150.585 pontos disponíveis até dia 28/12
+115,golpe,pontos expirando,publicado,https://bmcnews.com.br/?p=374256,Seus 150.000 pontos Livelo expiram hoje! Resgate agora produtos ou dinheiro
+116,golpe,emprego falso,publicado,https://www.oliberal.com/economia/projeto-am-novo-golpe-por-whatsapp-oferece-emprego-por-meio-periodo-veja-como-se-proteger-1.530781,"Olá, sou o gerente geral do projeto Am e atualmente estou recrutando uma equipe de meio período. Você pode trabalhar meio período no seu telefone. Um trabalho de meio período leva de 10 a 20 minutos!"
+117,golpe,emprego falso,publicado,https://bpmoney.com.br/?p=146706,"Olá, você foi selecionado para um trabalho de meio período online, com salário diário de R$ 500 – R$ 1000. Entre em contato comigo pelo link…"
+118,golpe,emprego falso,publicado,https://www.suno.com.br/noticias/golpe-do-emprego-dinheiro-fraude/amp/,Você foi selecionado para um trabalho de meio período online. Até R$ 500 por dia. Entre em contato comigo
+119,golpe,cnh suspensa,publicado,https://www.serasa.com.br/blog/golpe-suspensao-cnh/,Sua conta GOV tem uma nova mensagem sobre sua CNH. Acesse ww1.regualrizeagora.tax/dc5b3 e confira detalhes.
+120,golpe,cnh suspensa,publicado,https://mais.opovo.com.br/jornal/cidades/2024/12/15/detran-identifica-disparo-em-massa-de-sms-sobre-suspensao-da-cnh-e-alerta-para-golpe-no-ceara.html,NOTIFICAÇÃO EXTRAJUDICIAL. Suspensão da sua CNH em andamento. saiba mais e evite sua restrição
+121,golpe,falso parente,publicado,https://www.em.com.br/emfoco/?p=258599,"mãe, quebrei meu celular, esse é meu novo número, salva"
+122,golpe,falso parente,publicado,https://olhardigital.com.br/2024/09/13/pro/veja-o-que-fazer-se-voce-cair-no-golpe-do-numero-novo-do-whatsapp/,"fala, quanto tempo, tudo bem? Troquei meu número… Anota o novo e… você não teria um dinheiro para me emprestar?"
+123,golpe,falso parente,publicado,https://aegro.com.br/blog/golpe-whatsapp-como-se-proteger/,"Oi mãe/pai, troquei de número. Salva o novo e apaga o velho."
+124,golpe,falso parente,publicado,https://revistaoeste.com/brasil/golpista-teste-golpe-whatsapp-mae/,"oi mãe, tudo bem? Mudei de celular"
+125,golpe,falso parente,publicado,https://revistaoeste.com/brasil/golpista-teste-golpe-whatsapp-mae/,Oi mãe… pode me fazer um favor?
+126,legitimo,banco real,publicado,https://monitordomercado.com.br/noticias/347670-se-voce-tem-conta-no-santander-nao-ligue-para-este-tipo-de-numero-0800-enviado-por-sms-sobre-uma-compra-falsa/,"Santander: Compra de R$ 50,00 no cartao final 1234 em 24/01."
+201,legitimo,banco real,sintetico,,"Itaú: Pix recebido de MARIA S no valor de R$ 150,00. Consulte no app."
+202,legitimo,codigo legitimo,sintetico,,Seu código de acesso gov.br é 482193. Não informe este código a ninguém.
+203,legitimo,operadora,sintetico,,"Vivo: sua fatura de novembro no valor de R$ 89,90 vence em 20/11. Pague pelo app Vivo."
+204,legitimo,familia,sintetico,,"Mãe, cheguei bem. Te ligo mais tarde."
+205,legitimo,familia,sintetico,,"Oi amor, esqueci a carteira em casa, consegue me mandar 30 de pix pro almoço? Tô no restaurante de sempre"
+206,legitimo,codigo legitimo,sintetico,,Uber: seu código é 4821. Nunca compartilhe este código.
+207,legitimo,faculdade,sintetico,,"Olá, aqui é a Ana da secretaria da faculdade. Seu comprovante de matrícula está disponível no portal do aluno."
+208,legitimo,entrega real,sintetico,,Drogasil: seu pedido saiu para entrega e chega hoje até as 18h.
+209,legitimo,lembrete,sintetico,,"Lembrete Unimed: consulta com Dr. Paulo amanhã às 14h30. Para remarcar, ligue para a clínica."
+210,legitimo,familia,sintetico,,"Pai, o boleto da escola vence amanhã, não esquece. O código tá no e-mail que a secretaria mandou."
+211,legitimo,banco real,sintetico,,"Banco do Brasil: compra no débito de R$ 64,20 em SUPERMERCADO BH aprovada em 12/11 às 18:42."
+212,legitimo,servico,sintetico,,"Oi, tudo bem? Aqui é o João do conserto da geladeira. Consigo passar aí amanhã de manhã, pode ser?"
+213,legitimo,entrega real,sintetico,,Seu pedido Shopee foi entregue. Avalie sua compra no aplicativo.
+214,legitimo,amigos,sintetico,,"Galera, rachando a pizza de ontem deu 28 pra cada. Minha chave pix é meu celular, quem puder manda aí"

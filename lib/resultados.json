@@ -1,1 +1,60 @@
-{ "status": "pendente" }
+{
+  "geradoEm": "13/11/2026",
+  "provedor": "gemini",
+  "total": {
+    "vp": 37,
+    "vn": 26,
+    "fp": 1,
+    "fn": 0,
+    "total": 64,
+    "acuracia": "98.4%",
+    "precisao": "97.4%",
+    "sensibilidade": "100.0%",
+    "especificidade": "96.3%"
+  },
+  "reais": null,
+  "publicados": {
+    "vp": 25,
+    "vn": 1,
+    "fp": 0,
+    "fn": 0,
+    "total": 26,
+    "acuracia": "100.0%",
+    "precisao": "100.0%",
+    "sensibilidade": "100.0%",
+    "especificidade": "100.0%"
+  },
+  "sinteticos": {
+    "vp": 12,
+    "vn": 25,
+    "fp": 1,
+    "fn": 0,
+    "total": 38,
+    "acuracia": "97.4%",
+    "precisao": "92.3%",
+    "sensibilidade": "100.0%",
+    "especificidade": "96.2%"
+  },
+  "golpesDocumentados": {
+    "vp": 25,
+    "vn": 0,
+    "fp": 0,
+    "fn": 0,
+    "total": 25,
+    "acuracia": "100.0%",
+    "precisao": "100.0%",
+    "sensibilidade": "100.0%",
+    "especificidade": "—"
+  },
+  "legitimas": {
+    "vp": 0,
+    "vn": 26,
+    "fp": 1,
+    "fn": 0,
+    "total": 27,
+    "acuracia": "96.3%",
+    "precisao": "0.0%",
+    "sensibilidade": "—",
+    "especificidade": "96.3%"
+  }
+}

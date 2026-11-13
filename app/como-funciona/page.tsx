@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { TECNICAS } from "@/lib/tecnicas.mjs";
 import resultados from "@/lib/resultados.json";
+import resultadosRegras from "@/lib/resultados-regras.json";
+import linhaDeBase from "@/lib/resultados-linha-de-base.json";
 
 export const metadata: Metadata = { title: "Como funciona" };
 
@@ -19,8 +21,12 @@ interface Resultados {
   status?: string;
   geradoEm?: string;
   provedor?: string;
+  total?: Bloco | null;
   reais?: Bloco | null;
+  publicados?: Bloco | null;
   sinteticos?: Bloco | null;
+  golpesDocumentados?: Bloco | null; // golpes reais + publicados
+  legitimas?: Bloco | null;
 }
 
 const PASSOS = [
@@ -42,33 +48,22 @@ const PASSOS = [
   },
 ];
 
-function Quadro({ titulo, bloco, aviso }: { titulo: string; bloco: Bloco; aviso?: string }) {
+function Placar({ numero, de, rotulo, nota }: { numero: number; de: number; rotulo: string; nota: string }) {
   return (
     <div className="rounded-2xl bg-white p-5">
-      <h3 className="font-display text-xl font-extrabold">{titulo}</h3>
-      {aviso && <p className="mt-1 text-noite/70">{aviso}</p>}
-      <div className="mt-4 flex flex-wrap items-end gap-x-8 gap-y-3">
-        <div>
-          <div className="font-display text-6xl font-extrabold leading-none text-tinta">{bloco.acuracia}</div>
-          <div className="font-bold text-noite/70">de acerto em {bloco.total} mensagens</div>
-        </div>
-        <dl className="grid grid-cols-2 gap-x-6 text-lg">
-          <dt className="text-noite/70">Golpes pegos</dt>
-          <dd className="font-bold">
-            {bloco.vp} de {bloco.vp + bloco.fn}
-          </dd>
-          <dt className="text-noite/70">Legítimas liberadas</dt>
-          <dd className="font-bold">
-            {bloco.vn} de {bloco.vn + bloco.fp}
-          </dd>
-        </dl>
+      <div className="font-display text-6xl font-extrabold leading-none text-tinta">
+        {numero}
+        <span className="text-3xl text-noite/60"> de {de}</span>
       </div>
+      <div className="mt-2 text-xl font-bold">{rotulo}</div>
+      <p className="mt-1 text-noite/70">{nota}</p>
     </div>
   );
 }
 
 export default function ComoFunciona() {
   const r = resultados as Resultados;
+  const regras = resultadosRegras as Resultados;
 
   return (
     <main className="pb-28 md:pb-12">
@@ -99,24 +94,38 @@ export default function ComoFunciona() {
 
         <section>
           <h2 className="font-display text-3xl font-extrabold">Resultados dos testes</h2>
-          {r.reais || r.sinteticos ? (
+          {r.golpesDocumentados && r.legitimas && r.total ? (
             <div className="mt-5 space-y-4">
-              {r.reais && <Quadro titulo="Mensagens reais" bloco={r.reais} aviso="Golpes e mensagens legítimas recebidos por pessoas de verdade, com nomes e telefones apagados." />}
-              {r.sinteticos && (
-                <Quadro
-                  titulo="Exemplos escritos pela equipe"
-                  bloco={r.sinteticos}
-                  aviso="Servem para testar o sistema durante o desenvolvimento. Não contam como resultado, porque as regras foram ajustadas com eles."
+              <div className="grid gap-4 sm:grid-cols-2">
+                <Placar
+                  numero={r.golpesDocumentados.vp}
+                  de={r.golpesDocumentados.vp + r.golpesDocumentados.fn}
+                  rotulo="golpes documentados foram pegos"
+                  nota="Textos de golpes divulgados por imprensa, bancos, operadoras e órgãos públicos, cada um com a fonte registrada."
                 />
-              )}
-              <p className="text-noite/60">
-                Última medição: {r.geradoEm}
-                {r.provedor ? `, com ${r.provedor}` : ""}. Golpe classificado como suspeito conta como golpe pego.
+                <Placar
+                  numero={r.legitimas.vn}
+                  de={r.legitimas.vn + r.legitimas.fp}
+                  rotulo="mensagens legítimas foram liberadas"
+                  nota="Recados de família, avisos de banco e de entrega. Quase todas foram escritas pela equipe para o teste."
+                />
+              </div>
+              <p className="max-w-prose text-lg text-noite/85">
+                No total, o sistema acertou {r.total.vp + r.total.vn} de {r.total.total} mensagens ({r.total.acuracia}).
+                {` Na primeira medição, antes de qualquer ajuste, as regras locais sozinhas pegaram ${linhaDeBase.golpesPegos} de ${linhaDeBase.golpesTotal} golpes documentados e a IA pegou todos: é ela que reconhece o golpe escrito de um jeito novo.`}
+                {regras.golpesDocumentados
+                  ? ` Depois de ajustadas com esses exemplos, as regras pegam ${regras.golpesDocumentados.vp} de ${regras.golpesDocumentados.vp + regras.golpesDocumentados.fn}, que é o que o modo sem internet entrega.`
+                  : ""}
+              </p>
+              <p className="max-w-prose text-noite/60">
+                Medição de {r.geradoEm}
+                {r.provedor ? `, com ${r.provedor}` : ""}. Golpe classificado como suspeito conta como golpe pego. A amostra é pequena e os golpes
+                documentados são os mais conhecidos: golpe novo pode passar.
               </p>
             </div>
           ) : (
             <p className="mt-4 max-w-prose rounded-2xl bg-white p-5 text-lg">
-              A medição com mensagens reais está em andamento. O sistema é testado com golpes e mensagens legítimas recebidos por pessoas de verdade, e os números aparecem aqui assim que a avaliação roda.
+              A medição está em andamento. O sistema é testado com golpes documentados e com mensagens legítimas, e os números aparecem aqui assim que a avaliação roda.
             </p>
           )}
         </section>

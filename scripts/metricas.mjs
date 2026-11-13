@@ -77,17 +77,21 @@ Matriz de confusão:
 }
 
 export function gerarRelatorio(nomeArquivo, titulo, casos, extra = "") {
+  // origem: "real" = recebida por alguém da equipe/família; "publicado" = golpe divulgado por imprensa,
+  // bancos, operadoras ou órgãos públicos (com a fonte); "sintetico" = escrita por nós como exemplo.
   const reais = casos.filter((c) => c.origem === "real");
-  const sint = casos.filter((c) => c.origem !== "real");
+  const publicados = casos.filter((c) => c.origem === "publicado");
+  const sint = casos.filter((c) => c.origem !== "real" && c.origem !== "publicado");
   const erros = casos.filter((c) => (c.rotulo === "golpe") !== (c.nivel !== "seguro"));
 
   let md = `# ${titulo}\n\nGerado em ${new Date().toLocaleString("pt-BR")}${extra ? ` · ${extra}` : ""}\n\n`;
   md += bloco("Todas", casos) + "\n";
-  if (reais.length) md += bloco("Só mensagens REAIS (usar no banner)", reais) + "\n";
-  if (sint.length) md += bloco("Só exemplos sintéticos", sint) + "\n";
+  if (reais.length) md += bloco("Mensagens REAIS recebidas (coletadas pela equipe)", reais) + "\n";
+  if (publicados.length) md += bloco("Golpes PUBLICADOS por imprensa, bancos e operadoras", publicados) + "\n";
+  if (sint.length) md += bloco("Exemplos sintéticos (escritos pela equipe)", sint) + "\n";
   md += `## Erros (${erros.length})\n\n`;
   md += erros.length
-    ? erros.map((c) => `- **#${c.id}** era *${c.rotulo}* (${c.tipo}), saiu *${c.nivel}* com risco ${c.risco}% → "${c.texto.slice(0, 120)}${c.texto.length > 120 ? "..." : ""}"`).join("\n")
+    ? erros.map((c) => `- **#${c.id}** (${c.origem}) era *${c.rotulo}* (${c.tipo}), saiu *${c.nivel}* com risco ${c.risco}% → "${c.texto.slice(0, 120)}${c.texto.length > 120 ? "..." : ""}"`).join("\n")
     : "Nenhum 🎉";
   md += "\n\n## Todas as respostas\n\n| # | Rótulo | Origem | Nível | Risco | Tipo detectado |\n|---|---|---|---|---|---|\n";
   md += casos.map((c) => `| ${c.id} | ${c.rotulo} | ${c.origem} | ${c.nivel} | ${c.risco} | ${String(c.tipoDetectado || "").replace(/\|/g, "/")} |`).join("\n");
@@ -97,14 +101,21 @@ export function gerarRelatorio(nomeArquivo, titulo, casos, extra = "") {
   writeFileSync(destino, md, "utf8");
 
   // A avaliação do sistema completo também alimenta a página "Como funciona" do app.
-  if (nomeArquivo === "resultados.json" || nomeArquivo === "resultados.md") {
+  if (nomeArquivo === "resultados.md" || nomeArquivo === "resultados-regras.md") {
+    const golpes = (lista) => lista.filter((c) => c.rotulo === "golpe");
+    const legitimas = (lista) => lista.filter((c) => c.rotulo !== "golpe");
     const json = {
       geradoEm: new Date().toLocaleDateString("pt-BR"),
       provedor: extra.replace(/^provedor: /, ""),
+      total: calcular(casos),
       reais: reais.length ? calcular(reais) : null,
+      publicados: publicados.length ? calcular(publicados) : null,
       sinteticos: sint.length ? calcular(sint) : null,
+      golpesDocumentados: golpes([...reais, ...publicados]).length ? calcular(golpes([...reais, ...publicados])) : null,
+      legitimas: legitimas(casos).length ? calcular(legitimas(casos)) : null,
     };
-    writeFileSync(path.resolve(AQUI, "../lib/resultados.json"), JSON.stringify(json, null, 2) + "\n", "utf8");
+    const arquivo = nomeArquivo === "resultados.md" ? "resultados.json" : "resultados-regras.json";
+    writeFileSync(path.resolve(AQUI, "../lib", arquivo), JSON.stringify(json, null, 2) + "\n", "utf8");
   }
   return { destino, resumo: calcular(casos) };
 }
