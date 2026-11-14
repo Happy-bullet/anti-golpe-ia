@@ -45,4 +45,5 @@ export interface RespostaVovo {
   fala: string;
   tecnicas: string[]; // ids de lib/tecnicas.mjs encontrados na última fala do golpista
   fonte: "ia" | "roteiro";
+  audio?: string | null; // MP3 da fala (gravado ou /api/voz assinado); null = usar a voz do navegador
 }

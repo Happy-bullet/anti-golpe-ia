@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { TECNICAS } from "@/lib/tecnicas.mjs";
-import { falar, ouvir, pararFala, podeFalar, podeOuvir } from "@/lib/voz";
+import { detectarTecnicas, TECNICAS } from "@/lib/tecnicas.mjs";
+import { destravarAudio, falarVovo, ouvir, pararFala, podeFalar, podeOuvir } from "@/lib/voz";
+import { ABERTURA, ESPERAS, falaDoRoteiro } from "@/lib/falas-fixas";
 import type { FalaVovo, RespostaVovo } from "@/lib/tipos";
 
 const MAX_RODADAS = 12;
-const ABERTURA = "Alô? Quem fala? Espera só eu baixar o volume da novela.";
 
 const SUGESTOES = [
   "Oi vó, sou eu, seu neto! Troquei de número.",
@@ -34,6 +34,7 @@ export default function VoZilda() {
   const [temMicrofone, setTemMicrofone] = useState(false);
   const fimDaConversa = useRef<HTMLDivElement>(null);
   const pararOuvir = useRef<() => void>(() => {});
+  const [semInternet, setSemInternet] = useState(false);
 
   const rodadas = falas.filter((f) => f.de === "golpista").length;
 
@@ -60,8 +61,10 @@ export default function VoZilda() {
     setAberta(null);
     setSegundos(0);
     setErro("");
+    setSemInternet(false);
     setFase("conversa");
-    if (comVoz) falar(ABERTURA, { velocidade: 0.9, tom: 1.25 });
+    destravarAudio();
+    if (comVoz) falarVovo(ABERTURA);
   }
 
   function terminar() {
@@ -73,33 +76,50 @@ export default function VoZilda() {
   async function enviar(mensagem = texto) {
     const dito = mensagem.trim().slice(0, 300);
     if (!dito || esperando) return;
+    destravarAudio();
+    pararFala();
     const historico: FalaVovo[] = [...falas, { de: "golpista", texto: dito }];
     setFalas(historico);
     setTexto("");
     setErro("");
     setEsperando(true);
+    const rodada = historico.filter((f) => f.de === "golpista").length;
+    // Se a resposta demorar, a Vó solta um "hummm..." gravado para ninguém ficar no silêncio.
+    const espera = setTimeout(() => {
+      if (comVoz) falarVovo(ESPERAS[rodada % ESPERAS.length], null, { soGravada: true });
+    }, 1300);
+    let j: RespostaVovo;
     try {
       const r = await fetch("/api/vovo", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ historico }),
+        signal: AbortSignal.timeout ? AbortSignal.timeout(20000) : undefined,
       });
-      const j: RespostaVovo & { erro?: string } = await r.json();
-      if (!r.ok) throw new Error(j.erro || "A Vó Zilda não ouviu. Tente de novo.");
-      const completo: FalaVovo[] = [...historico, { de: "vovo", texto: j.fala }];
-      setFalas(completo);
-      const achadas = j.tecnicas.filter((id) => !reveladas.includes(id));
-      setNovas(achadas);
-      const todas = [...reveladas, ...achadas];
-      setReveladas(todas);
-      if (comVoz) falar(j.fala, { velocidade: 0.9, tom: 1.25 });
-      if (todas.length >= TECNICAS.length || completo.filter((f) => f.de === "golpista").length >= MAX_RODADAS) {
-        setTimeout(terminar, 3500);
-      }
-    } catch (e) {
-      setErro(e instanceof Error && e.message !== "Failed to fetch" ? e.message : "Sem conexão. Confira a internet e tente de novo.");
+      const corpo: RespostaVovo & { erro?: string } = await r.json();
+      if (!r.ok || !corpo.fala) throw new Error(corpo.erro || "sem resposta");
+      j = corpo;
+      setSemInternet(false);
+    } catch {
+      // Plano B: sem internet ou servidor fora, a Vó responde pelo roteiro aqui mesmo no aparelho.
+      const tecnicas = detectarTecnicas(dito);
+      j = { fala: falaDoRoteiro(tecnicas, rodada), tecnicas, fonte: "roteiro", audio: null };
+      setSemInternet(true);
     } finally {
+      clearTimeout(espera);
       setEsperando(false);
+    }
+    const completo: FalaVovo[] = [...historico, { de: "vovo", texto: j.fala }];
+    setFalas(completo);
+    const achadas = j.tecnicas.filter((id) => !reveladas.includes(id));
+    setNovas(achadas);
+    const todas = [...reveladas, ...achadas];
+    setReveladas(todas);
+    const acabou = todas.length >= TECNICAS.length || rodada >= MAX_RODADAS;
+    if (comVoz) {
+      falarVovo(j.fala, j.audio, { aoTerminar: acabou ? () => setTimeout(terminar, 800) : undefined });
+    } else if (acabou) {
+      setTimeout(terminar, 3500);
     }
   }
 
@@ -166,7 +186,7 @@ export default function VoZilda() {
               </button>
               {temVoz && (
                 <label className="flex cursor-pointer items-center gap-2 text-lg">
-                  <input type="checkbox" checked={comVoz} onChange={(e) => setComVoz(e.target.checked)} className="h-5 w-5 accent-[#FFC629]" />
+                  <input type="checkbox" checked={comVoz} onChange={(e) => { setComVoz(e.target.checked); if (!e.target.checked) pararFala(); }} className="h-5 w-5 accent-[#FFC629]" />
                   Ouvir a voz dela
                 </label>
               )}
@@ -209,6 +229,10 @@ export default function VoZilda() {
                 )}
                 <div ref={fimDaConversa} />
               </div>
+
+              {semInternet && (
+                <p className="mt-3 text-sm text-white/60">Sem conexão com o servidor: a Vó está usando o roteiro guardado no aparelho.</p>
+              )}
 
               {erro && (
                 <p role="alert" className="mt-3 rounded-lg bg-golpe/20 p-3 font-bold">

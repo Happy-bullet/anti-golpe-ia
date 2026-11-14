@@ -51,3 +51,28 @@ $env:URL="https://anti-golpe-ia.vercel.app"; npm run avaliar
 
 Abra `https://anti-golpe-ia.vercel.app/estande` e clique em "Tela cheia".
 Plano B sem internet: `npm run build` e `npm run start` no notebook, depois `http://localhost:3000/estande?url=https://anti-golpe-ia.vercel.app`.
+
+## 6. Voz da Vó Zilda (ElevenLabs)
+
+A Vó fala em camadas. Se uma falhar, a próxima entra sozinha, sem erro na tela:
+
+1. **Falas fixas gravadas** (`public/falas/*.mp3`): abertura, roteiro, desvios e os "hummm..." de espera. Não gastam crédito e tocam até sem internet.
+2. **Falas novas da IA** viram áudio em `/api/voz` (modelo rápido `eleven_flash_v2_5`). A URL é assinada pelo servidor e fica em cache na CDN da Vercel.
+3. **Voz do aparelho**: a voz em português mais natural do navegador (no Edge, as vozes "Natural" são as melhores).
+4. **Sem internet**: o service worker guarda as páginas e as falas gravadas, e a Vó responde pelo roteiro no próprio aparelho.
+
+Proteções: teto diário de caracteres (`LIMITE_VOZ_CARACTERES_DIA`, padrão 6000) e um disjuntor que pausa a ElevenLabs por 20 minutos quando os créditos acabam.
+
+### Configurar
+
+1. Na Vercel, em *Settings → Environment Variables*, crie `ELEVENLABS_API_KEY` (segredo) e `ELEVENLABS_VOICE_ID`, depois faça Redeploy.
+2. Grave as falas fixas pelo próprio site, para que a chave nunca saia da Vercel:
+
+```powershell
+cd app
+node scripts/gravar-falas.mjs
+```
+
+São cerca de 2.500 caracteres no modelo de alta qualidade. Depois disso, publique os arquivos novos (`public/falas/` e `lib/falas-gravadas.json`).
+
+Se trocar a voz, grave de novo com `node scripts/gravar-falas.mjs --refazer`.
