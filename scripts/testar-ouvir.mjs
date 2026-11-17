@@ -10,7 +10,7 @@ if (!chave) {
 }
 const modelo = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 
-async function transcrever(base64, comRaciocinio = true) {
+async function transcrever(base64, comRaciocinio = true, tipo = "audio/wav") {
   const generationConfig = { responseMimeType: "application/json", temperature: 0, maxOutputTokens: 400 };
   if (comRaciocinio) generationConfig.thinkingConfig = { thinkingLevel: "minimal" };
   const r = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${modelo}:generateContent`, {
@@ -18,11 +18,11 @@ async function transcrever(base64, comRaciocinio = true) {
     headers: { "content-type": "application/json", "x-goog-api-key": chave },
     body: JSON.stringify({
       systemInstruction: { parts: [{ text: SISTEMA_OUVIR }] },
-      contents: [{ role: "user", parts: [{ inlineData: { mimeType: "audio/wav", data: base64 } }, { text: PEDIDO_OUVIR }] }],
+      contents: [{ role: "user", parts: [{ inlineData: { mimeType: tipo, data: base64 } }, { text: PEDIDO_OUVIR }] }],
       generationConfig,
     }),
   });
-  if (r.status === 400 && comRaciocinio) return transcrever(base64, false);
+  if (r.status === 400 && comRaciocinio) return transcrever(base64, false, tipo);
   const j = await r.json();
   if (!r.ok) throw new Error(`${r.status}: ${JSON.stringify(j).slice(0, 200)}`);
   const texto = (j?.candidates?.[0]?.content?.parts || []).filter((p) => !p.thought).map((p) => p.text || "").join("");
@@ -32,7 +32,7 @@ async function transcrever(base64, comRaciocinio = true) {
 for (const arquivo of process.argv.slice(2)) {
   const inicio = Date.now();
   try {
-    const texto = await transcrever(readFileSync(arquivo).toString("base64"));
+    const texto = await transcrever(readFileSync(arquivo).toString("base64"), true, arquivo.endsWith(".mp3") ? "audio/mp3" : "audio/wav");
     console.log(`${arquivo.split(/[\\/]/).pop()}  (${Date.now() - inicio} ms)\n   -> ${JSON.stringify(texto)}`);
   } catch (e) {
     console.log(`${arquivo.split(/[\\/]/).pop()}  FALHOU: ${e.message}`);
