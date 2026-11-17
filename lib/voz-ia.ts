@@ -22,7 +22,20 @@ function chave() {
   return process.env.ELEVENLABS_API_KEY || "";
 }
 function vozId() {
-  return process.env.ELEVENLABS_VOICE_ID || "";
+  const id = (process.env.ELEVENLABS_VOICE_ID || "").trim();
+  // Proteção contra troca de variáveis: se colarem a chave no lugar do ID da voz, a voz fica desligada
+  // (um ID de voz tem 20 letras e números e nunca começa com "sk_").
+  return /^[A-Za-z0-9]{16,32}$/.test(id) && !id.startsWith("sk") ? id : "";
+}
+
+/** Diz se a variável do ID da voz está preenchida com algo que não é um ID (para avisar no painel). */
+export function vozIdInvalido(): boolean {
+  return !!(process.env.ELEVENLABS_VOICE_ID || "").trim() && !vozId();
+}
+
+/** Marca curta da voz em uso (não é o ID): serve só para o script saber se a voz mudou e regravar. */
+export function impressaoDaVoz(): string {
+  return createHash("sha256").update(`voz:${vozId()}`).digest("hex").slice(0, 10);
 }
 
 export function vozConfigurada(): boolean {

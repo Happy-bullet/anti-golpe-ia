@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { todasAsFalasFixas } from "@/lib/falas-fixas";
-import { limparParaVoz, nomeDoArquivo, urlDeGravacao, vozConfigurada } from "@/lib/voz-ia";
+import { impressaoDaVoz, limparParaVoz, nomeDoArquivo, urlDeGravacao, vozConfigurada } from "@/lib/voz-ia";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,5 +16,5 @@ export async function GET() {
     const limpo = limparParaVoz(texto);
     return { texto: limpo, arquivo: `/falas/${nomeDoArquivo(limpo)}.mp3`, gravar: urlDeGravacao(limpo) };
   });
-  return NextResponse.json({ voz: process.env.ELEVENLABS_VOICE_ID, falas }, { headers: { "cache-control": "no-store" } });
+  return NextResponse.json({ voz: impressaoDaVoz(), falas }, { headers: { "cache-control": "no-store" } });
 }
