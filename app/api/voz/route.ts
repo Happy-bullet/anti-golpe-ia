@@ -34,7 +34,7 @@ export async function GET(req: Request) {
   } catch (e) {
     const status = e instanceof ErroDeVoz ? e.status : 503;
     return NextResponse.json(
-      { erro: e instanceof Error ? e.message : "Voz indisponível." },
+      { erro: e instanceof ErroDeVoz ? e.message : "Voz indisponível." },
       { status, headers: { "cache-control": "no-store" } },
     );
   }

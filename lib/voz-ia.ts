@@ -19,7 +19,13 @@ export type Qualidade = "rapida" | "alta";
 const MAPA_GRAVADAS: Record<string, string> = (gravadas as { falas?: Record<string, string> }).falas || {};
 
 function chave() {
-  return process.env.ELEVENLABS_API_KEY || "";
+  // Só o primeiro "pedaço": se a chave for colada duas vezes ou com quebra de linha, ainda funciona.
+  return (process.env.ELEVENLABS_API_KEY || "").trim().split(/\s+/)[0] || "";
+}
+
+/** Tira qualquer coisa com cara de chave de uma mensagem antes de ela ir para o registro. */
+function semSegredo(texto: string): string {
+  return texto.replace(/sk_[A-Za-z0-9]+/g, "sk_***").slice(0, 300);
 }
 function vozId() {
   const id = (process.env.ELEVENLABS_VOICE_ID || "").trim();
@@ -170,11 +176,13 @@ export async function sintetizar(texto: string, qualidade: Qualidade): Promise<B
     });
   } catch (e) {
     registrarFalha(false);
-    throw new ErroDeVoz(`ElevenLabs não respondeu: ${e instanceof Error ? e.message : e}`);
+    // A mensagem do erro pode trazer o cabeçalho com a chave: vai só para o registro, e sem a chave.
+    console.error("[anti-golpe] ElevenLabs não respondeu:", semSegredo(e instanceof Error ? e.message : String(e)));
+    throw new ErroDeVoz("ElevenLabs não respondeu.");
   }
 
   if (!r.ok) {
-    const detalhe = (await r.text().catch(() => "")).slice(0, 300);
+    const detalhe = semSegredo(await r.text().catch(() => ""));
     const semCreditos = r.status === 401 || r.status === 402 || /quota|credit|limit/i.test(detalhe);
     registrarFalha(semCreditos);
     console.error(`[anti-golpe] ElevenLabs ${r.status}${semCreditos ? " (créditos/cota)" : ""}: ${detalhe}`);

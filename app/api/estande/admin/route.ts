@@ -33,7 +33,8 @@ export async function GET(req: Request) {
   try {
     return responder(painel(await estadoAtual("", 0)));
   } catch (erro) {
-    return responder({ erro: `Banco fora do ar: ${erro instanceof Error ? erro.message : erro}` }, 503);
+    console.error("[anti-golpe] admin:", erro instanceof Error ? erro.message.replace(/Bearer\s+\S+/g, "Bearer ***") : erro);
+    return responder({ erro: "Banco fora do ar. Confira a conexão do Redis na Vercel." }, 503);
   }
 }
 
@@ -55,6 +56,7 @@ export async function POST(req: Request) {
     });
     return responder(painel(estado, retorno.ok ? {} : { erro: retorno.erro }), retorno.ok ? 200 : 409);
   } catch (erro) {
-    return responder({ erro: `Banco fora do ar: ${erro instanceof Error ? erro.message : erro}` }, 503);
+    console.error("[anti-golpe] admin:", erro instanceof Error ? erro.message.replace(/Bearer\s+\S+/g, "Bearer ***") : erro);
+    return responder({ erro: "Banco fora do ar. Confira a conexão do Redis na Vercel." }, 503);
   }
 }
