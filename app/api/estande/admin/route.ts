@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import { acaoDoAdmin, avancar, visaoAdmin } from "@/lib/estande.mjs";
 import { mudarEstado, tipoDeBanco } from "@/lib/armazem";
 import { despedida, estadoAtual } from "@/lib/estande-servidor";
-import { vozConfigurada, vozIdInvalido } from "@/lib/voz-ia";
-import { audioDisponivel, limparPausasDaIA, provedoresDisponiveis } from "@/lib/ia";
+import { estadoDasContas, limparPausasDaVoz, problemasDeConfiguracao, vozConfigurada, vozIdInvalido } from "@/lib/voz-ia";
+import { audioDisponivel, estadoDasChavesDeIA, limparPausasDaIA, provedoresDisponiveis } from "@/lib/ia";
 import { dentroDoLimite, ipDoPedido } from "@/lib/limite";
 
 export const runtime = "nodejs";
@@ -22,8 +22,20 @@ function conferirSenha(req: Request): NextResponse | null {
   return responder({ erro: "Senha incorreta." }, 401);
 }
 
-function painel(e: Parameters<typeof visaoAdmin>[0], extra: Record<string, unknown> = {}) {
-  return { ...visaoAdmin(e, Date.now()), banco: tipoDeBanco(), voz: vozConfigurada(), vozIdInvalido: vozIdInvalido(), ia: provedoresDisponiveis().join(" + ") || "offline", audioNoServidor: audioDisponivel(), ...extra };
+async function painel(e: Parameters<typeof visaoAdmin>[0], extra: Record<string, unknown> = {}) {
+  const [contasDeVoz, chavesDeIA, audioNoServidor] = await Promise.all([estadoDasContas(), estadoDasChavesDeIA(), audioDisponivel()]);
+  return {
+    ...visaoAdmin(e, Date.now()),
+    banco: tipoDeBanco(),
+    voz: vozConfigurada(),
+    vozIdInvalido: vozIdInvalido(),
+    problemasDeVoz: problemasDeConfiguracao(),
+    contasDeVoz,
+    chavesDeIA,
+    ia: provedoresDisponiveis().join(" + ") || "offline",
+    audioNoServidor,
+    ...extra,
+  };
 }
 
 export async function GET(req: Request) {
@@ -31,7 +43,7 @@ export async function GET(req: Request) {
   if (barrado) return barrado;
   if (tipoDeBanco() === "nenhum") return responder({ ativo: false, banco: "nenhum", erro: "Falta criar o banco Redis (Upstash) na Vercel." });
   try {
-    return responder(painel(await estadoAtual("", 0)));
+    return responder(await painel(await estadoAtual("", 0)));
   } catch (erro) {
     console.error("[anti-golpe] admin:", erro instanceof Error ? erro.message.replace(/Bearer\s+\S+/g, "Bearer ***") : erro);
     return responder({ erro: "Banco fora do ar. Confira a conexão do Redis na Vercel." }, 503);
@@ -50,12 +62,13 @@ export async function POST(req: Request) {
   }
   try {
     const agora = Date.now();
-    if (corpo.acao === "testar-microfone") limparPausasDaIA();
+    if (corpo.acao === "testar-microfone") await limparPausasDaIA();
+    if (corpo.acao === "tentar-vozes") await limparPausasDaVoz();
     const { estado, retorno } = await mudarEstado((e) => {
       avancar(e, agora, despedida);
       return acaoDoAdmin(e, String(corpo.acao || ""), corpo, agora, despedida) as { ok: boolean; erro?: string };
     });
-    return responder(painel(estado, retorno.ok ? {} : { erro: retorno.erro }), retorno.ok ? 200 : 409);
+    return responder(await painel(estado, retorno.ok ? {} : { erro: retorno.erro }), retorno.ok ? 200 : 409);
   } catch (erro) {
     console.error("[anti-golpe] admin:", erro instanceof Error ? erro.message.replace(/Bearer\s+\S+/g, "Bearer ***") : erro);
     return responder({ erro: "Banco fora do ar. Confira a conexão do Redis na Vercel." }, 503);

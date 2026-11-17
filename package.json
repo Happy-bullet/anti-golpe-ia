@@ -11,7 +11,8 @@
     "testar-pix": "node scripts/testar-pix.mjs",
     "avaliar": "node scripts/avaliar.mjs",
     "gravar-falas": "node scripts/gravar-falas.mjs",
-    "testar-estande": "node scripts/testar-estande.mjs"
+    "testar-estande": "node scripts/testar-estande.mjs",
+    "testar-chaves": "node scripts/testar-chaves.mjs"
   },
   "dependencies": {
     "@fontsource-variable/bricolage-grotesque": "^5.3.0",

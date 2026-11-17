@@ -147,4 +147,26 @@ export interface VisaoAdmin extends VisaoEstande {
   ia: string;
   /** false: sem chave do Gemini ou sem cota para transcrever o microfone neste servidor. */
   audioNoServidor?: boolean;
+  /** Números das contas da ElevenLabs com ID de voz errado ou faltando. */
+  problemasDeVoz?: { vozInvalida: number[]; semVoz: number[] };
+  contasDeVoz?: EstadoContaDeVoz[];
+  chavesDeIA?: EstadoChaveDeIA[];
+}
+
+/** Uma conta da ElevenLabs, como o painel mostra (sem chave e sem ID da voz). */
+export interface EstadoContaDeVoz {
+  n: number;
+  vozPropria: boolean;
+  caracteresHoje: number;
+  teto: number;
+  pausa: { motivo: string; ate: number } | null;
+  saldo: { usados: number; limite: number } | null;
+}
+
+/** Uma chave de IA, como o painel mostra (só o número). */
+export interface EstadoChaveDeIA {
+  provedor: string;
+  n: number;
+  pausas: { modelo: string; motivo: string; ate: number }[];
+  parada: boolean;
 }

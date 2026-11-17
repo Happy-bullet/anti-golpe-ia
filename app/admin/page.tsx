@@ -10,6 +10,8 @@ import { minutos, usarEstande, usarRelogio } from "@/lib/usar-estande";
 import type { VisaoAdmin } from "@/lib/tipos";
 
 const DURACOES = [60, 90, 120, 150, 180];
+const hora = (ms: number) => new Date(ms).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+const nomeDaVariavel = (base: string, n: number) => (n === 1 ? base : `${base}_${n}`);
 // Medido na voz ao vivo (modelo flash): 57 créditos para uma fala de cerca de 110 caracteres.
 const CREDITOS_POR_CARACTERE = 0.52;
 
@@ -142,7 +144,11 @@ export default function Admin() {
       )}
       {visao.vozIdInvalido && (
         <p role="alert" className="mt-3 rounded-lg bg-golpe/10 p-3 font-bold text-golpe">
-          A variável ELEVENLABS_VOICE_ID na Vercel não tem um ID de voz (parece outra coisa, talvez a chave). Corrija e publique de novo.
+          {(visao.problemasDeVoz?.vozInvalida || []).map((n) => nomeDaVariavel("ELEVENLABS_VOICE_ID", n)).join(", ") ||
+            (visao.problemasDeVoz?.semVoz || []).map((n) => nomeDaVariavel("ELEVENLABS_VOICE_ID", n)).join(", ")}
+          {(visao.problemasDeVoz?.vozInvalida || []).length
+            ? ": o valor na Vercel não é um ID de voz (parece outra coisa, talvez a chave). Corrija e publique de novo."
+            : ": falta o ID da voz dessa conta. Crie a voz nela e cole o ID na Vercel."}
         </p>
       )}
 
@@ -336,6 +342,38 @@ export default function Admin() {
               </button>
             </>
           )}
+        </div>
+        <div className="mt-3 border-t border-noite/10 pt-3">
+          <p className="font-bold">Contas de voz (ElevenLabs)</p>
+          {!(visao.contasDeVoz || []).length && <p className="mt-1 text-sm text-noite/80">Nenhuma conta configurada. A Vó usa as falas gravadas e a voz do navegador.</p>}
+          <ul className="mt-1 space-y-1 text-sm">
+            {(visao.contasDeVoz || []).map((c) => (
+              <li key={c.n} className={c.pausa && c.pausa.motivo !== "ocupada" ? "text-golpe" : "text-noite/85"}>
+                <strong>Conta {c.n}</strong>:{" "}
+                {c.pausa ? `parada (${c.pausa.motivo}) até ${hora(c.pausa.ate)}` : c.caracteresHoje >= c.teto ? "chegou no teto do dia" : "funcionando"}
+                {" · "}
+                {c.saldo
+                  ? `${Math.max(0, c.saldo.limite - c.saldo.usados).toLocaleString("pt-BR")} créditos sobrando`
+                  : `${c.caracteresHoje.toLocaleString("pt-BR")} caracteres hoje`}
+                {!c.vozPropria && " · usa a voz da conta 1"}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1 text-sm text-noite/70">A Vó usa a conta 1 até ela parar, depois a 2, e assim por diante. A voz pode mudar um pouco na troca.</p>
+          <p className="mt-2 font-bold">Chaves de IA</p>
+          <ul className="mt-1 space-y-1 text-sm">
+            {(visao.chavesDeIA || []).map((k) => (
+              <li key={`${k.provedor}-${k.n}`} className={k.parada ? "text-golpe" : "text-noite/85"}>
+                <strong>
+                  {k.provedor === "gemini" ? "Gemini" : "Claude"} {k.n}
+                </strong>
+                : {k.pausas.length ? k.pausas.map((p) => `${p.modelo} parado (${p.motivo}) até ${hora(p.ate)}`).join("; ") : "funcionando"}
+              </li>
+            ))}
+          </ul>
+          <button onClick={() => fazer({ acao: "tentar-vozes" })} className="mt-2 rounded-xl border-2 border-noite/30 px-3 py-2 text-sm font-bold">
+            Tentar as contas de voz de novo
+          </button>
         </div>
         <div className="mt-3 border-t border-noite/10 pt-3">
           {!confirmar ? (

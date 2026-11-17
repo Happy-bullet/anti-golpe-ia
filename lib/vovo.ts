@@ -35,7 +35,7 @@ export interface OpcoesVovo {
 
 export async function responderVovo(historico: FalaVovo[], opcoes: OpcoesVovo = {}): Promise<RespostaVovo> {
   const r = await pensarResposta(historico, opcoes);
-  return { ...r, audio: urlDoAudio(r.fala) };
+  return { ...r, audio: await urlDoAudio(r.fala) };
 }
 
 async function pensarResposta(historico: FalaVovo[], opcoes: OpcoesVovo): Promise<Omit<RespostaVovo, "audio">> {

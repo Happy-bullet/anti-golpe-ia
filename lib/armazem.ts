@@ -36,6 +36,12 @@ async function redis(comando: (string | number)[]): Promise<unknown> {
   return j.result;
 }
 
+/** Comando avulso no Redis, para outros módulos (pausas das chaves, contagem de voz). null quando não há Redis. */
+export async function comandoRedis(comando: (string | number)[]): Promise<unknown> {
+  if (tipoDeBanco() !== "redis") return null;
+  return redis(comando);
+}
+
 interface Lido {
   estado: EstadoEstande;
   n: number;

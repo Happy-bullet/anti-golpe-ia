@@ -19,9 +19,9 @@ const SEM_CACHE = { "cache-control": "no-store" };
 const responder = (corpo: unknown, status = 200) => NextResponse.json(corpo, { status, headers: SEM_CACHE });
 
 /** A visão do estado, mais o aviso de que este servidor não consegue transcrever (sem chave ou sem cota do Gemini). */
-function visaoDe(e: Parameters<typeof visao>[0], pid: string) {
+async function visaoDe(e: Parameters<typeof visao>[0], pid: string) {
   const v = visao(e, pid, Date.now());
-  return { ...v, ouvirPausado: v.ouvirPausado || !audioDisponivel() };
+  return { ...v, ouvirPausado: v.ouvirPausado || !(await audioDisponivel()) };
 }
 
 // GET /api/estande?pid=...  -> o que o celular e a TV mostram (perguntam a cada 1 ou 2 segundos)
@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const pid = new URL(req.url).searchParams.get("pid") || "";
   try {
     const e = await estadoAtual(pidValido(pid) ? pid : "");
-    return responder(visaoDe(e, pidValido(pid) ? pid : ""));
+    return responder(await visaoDe(e, pidValido(pid) ? pid : ""));
   } catch (erro) {
     console.error("[anti-golpe] estande GET:", erro instanceof Error ? erro.message : erro);
     return responder({ ativo: false, erro: "Estado do estande indisponível." }, 503);
@@ -76,8 +76,8 @@ export async function POST(req: Request) {
   if (!dentroDoLimite(`estande:${pid}`, 90)) return responder({ erro: "Calma, um pedido de cada vez." }, 429);
 
   const agora = Date.now();
-  const resposta = (e: Parameters<typeof visao>[0], extra: Record<string, unknown> = {}, status = 200) =>
-    responder({ ...visaoDe(e, pid), ...extra }, status);
+  const resposta = async (e: Parameters<typeof visao>[0], extra: Record<string, unknown> = {}, status = 200) =>
+    responder({ ...(await visaoDe(e, pid)), ...extra }, status);
 
   try {
     switch (corpo.acao) {
@@ -116,7 +116,7 @@ export async function POST(req: Request) {
         let tentouOuvir = false;
         if (!texto && corpo.audio) {
           // Transcrição em pausa (cota da IA acabou ou falhou duas vezes): nem tenta, o celular usa o microfone do navegador.
-          if (ouvirPausado(vez.estado, agora) || !audioDisponivel()) falhaAoOuvir = true;
+          if (ouvirPausado(vez.estado, agora) || !(await audioDisponivel())) falhaAoOuvir = true;
           else {
             tentouOuvir = true;
             try {
@@ -128,9 +128,10 @@ export async function POST(req: Request) {
           }
         }
         if (!texto) {
+          const semCota = falhaAoOuvir && tentouOuvir && !(await audioDisponivel());
           const { estado } = await mudarEstado((e) => {
             liberar(e, cid);
-            if (falhaAoOuvir && tentouOuvir) registrarFalhaAoOuvir(e, Date.now(), !audioDisponivel());
+            if (falhaAoOuvir && tentouOuvir) registrarFalhaAoOuvir(e, Date.now(), semCota);
           });
           return resposta(estado, { erro: falhaAoOuvir ? "ouvir-falhou" : "nao-ouvi" }, 422);
         }

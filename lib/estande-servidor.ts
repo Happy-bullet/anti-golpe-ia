@@ -2,16 +2,16 @@
 import { avancar, marcarVisto } from "./estande.mjs";
 import { lerEstado, mudarEstado } from "./armazem";
 import { ABERTURA, DESPEDIDAS } from "./falas-fixas";
-import { urlDoAudio } from "./voz-ia";
+import { urlDoAudioSemConferir } from "./voz-ia";
 import type { EstadoEstande } from "./tipos";
 
 export function despedida(motivo: string) {
   const texto = DESPEDIDAS[motivo] || DESPEDIDAS.tempo;
-  return { texto, url: urlDoAudio(texto) };
+  return { texto, url: urlDoAudioSemConferir(texto) };
 }
 
 export function abertura() {
-  return { texto: ABERTURA, url: urlDoAudio(ABERTURA) };
+  return { texto: ABERTURA, url: urlDoAudioSemConferir(ABERTURA) };
 }
 
 export function pidValido(pid: unknown): pid is string {
