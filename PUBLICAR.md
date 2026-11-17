@@ -104,6 +104,18 @@ No dia da Mostra a Vó Zilda atende **uma pessoa por vez**:
 
 Com o modo estande desligado (ou sem internet), `/vovo` volta a ser a Vó de sempre, cada um no próprio celular.
 
+### Modo econômico de voz (vem ligado)
+
+Fica em **Ajustes** no painel. Ligado, quando a pessoa usa um truque conhecido ("aqui é do banco", "me passa a senha", "faz um pix"), a Vó responde com uma **fala já gravada**: sai na hora, não chama a IA e não gasta crédito da ElevenLabs. Ela só improvisa (IA + voz gerada na hora) no que sai do roteiro. A fala gravada só é usada se combinar com o que a pessoa disse e nunca se repete na mesma ligação.
+
+O painel mostra, em **Voz usada nas respostas**, quantas respostas foram gravadas, quantas foram geradas na hora e uma estimativa dos créditos gastos. O saldo de verdade fica no site da ElevenLabs.
+
+### IA sem cota
+
+- **Microfone**: quem transcreve a fala é o Gemini. Se a cota dele acabar, o painel avisa em **Microfone de quem liga** e os celulares passam sozinhos para o reconhecimento de voz do navegador (ou o teclado). O botão **Tentar a IA de novo** volta a testar.
+- **Respostas**: um modelo que respondeu "sem cota" fica 30 minutos sem ser tentado, para a Vó não demorar. Sem nenhuma IA, a Vó segue o roteiro gravado sem repetir fala.
+- **Claude como IA principal**: crie `ANTHROPIC_API_KEY` e `IA_PROVEDOR=claude` na Vercel. As respostas passam a vir do Claude e a cota gratuita do Gemini fica só para o microfone (o Claude não recebe áudio).
+
 ### Testes
 
 ```powershell

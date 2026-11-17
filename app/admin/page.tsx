@@ -10,6 +10,8 @@ import { minutos, usarEstande, usarRelogio } from "@/lib/usar-estande";
 import type { VisaoAdmin } from "@/lib/tipos";
 
 const DURACOES = [60, 90, 120, 150, 180];
+// Medido na voz ao vivo (modelo flash): 57 créditos para uma fala de cerca de 110 caracteres.
+const CREDITOS_POR_CARACTERE = 0.52;
 
 function Chave({ rotulo, ligado, aoTrocar, ajuda }: { rotulo: string; ligado: boolean; aoTrocar: (v: boolean) => void; ajuda?: string }) {
   return (
@@ -111,6 +113,8 @@ export default function Admin() {
   const agora = agoraNoServidor();
   const c = visao.chamada;
   const proximo = visao.filaCompleta?.[0];
+  const voz = visao.vozUsada || { gravadas: 0, aoVivo: 0, caracteres: 0, navegador: 0 };
+  const micPelaIA = !visao.ouvirPausado && visao.audioNoServidor !== false;
 
   return (
     <main className="mx-auto min-h-screen max-w-3xl px-4 pb-16 pt-6">
@@ -296,6 +300,42 @@ export default function Admin() {
             aoTrocar={(v) => fazer({ acao: "configurar", somNoCelular: v })}
             ajuda="Deixe desligado quando a voz sai na TV ou na caixa de som, para não dar eco no microfone."
           />
+          <Chave
+            rotulo="Modo econômico de voz"
+            ligado={visao.config.economico !== false}
+            aoTrocar={(v) => fazer({ acao: "configurar", economico: v })}
+            ajuda="Ligado: quando a pessoa usa um truque conhecido, a Vó responde com uma fala já gravada, que sai na hora e não gasta crédito. Ela só improvisa (e gasta crédito) no que sai do roteiro. Desligado: a Vó improvisa em toda resposta."
+          />
+        </div>
+        <div className="mt-3 border-t border-noite/10 pt-3">
+          <p className="font-bold">Voz usada nas respostas</p>
+          <p className="mt-1 text-sm text-noite/80">
+            Falas gravadas (grátis): <strong>{voz.gravadas}</strong> · Geradas na hora: <strong>{voz.aoVivo}</strong> ({voz.caracteres} caracteres, cerca de{" "}
+            <strong>{Math.round(voz.caracteres * CREDITOS_POR_CARACTERE)} créditos</strong> da ElevenLabs) · Voz do navegador: <strong>{voz.navegador}</strong>
+          </p>
+          <p className="mt-1 text-sm text-noite/70">
+            Os créditos são uma estimativa. O saldo de verdade aparece no site da ElevenLabs.
+            {voz.navegador > 0 && " Voz do navegador quer dizer que a ElevenLabs não respondeu (crédito ou conexão)."}
+          </p>
+          <button onClick={() => fazer({ acao: "zerar-contagem-de-voz" })} className="mt-2 rounded-xl border-2 border-noite/30 px-3 py-2 text-sm font-bold">
+            Zerar esta contagem
+          </button>
+        </div>
+        <div className="mt-3 border-t border-noite/10 pt-3">
+          <p className="font-bold">Microfone de quem liga</p>
+          {micPelaIA ? (
+            <p className="mt-1 text-sm text-noite/80">A IA transcreve a fala no servidor (aguenta melhor o barulho do estande).</p>
+          ) : (
+            <>
+              <p className="mt-1 text-sm text-noite/80">
+                A IA não está transcrevendo agora (sem cota ou sem chave do Gemini). Os celulares usam o reconhecimento de voz do próprio navegador, ou o
+                teclado.
+              </p>
+              <button onClick={() => fazer({ acao: "testar-microfone" })} className="mt-2 rounded-xl border-2 border-noite/30 px-3 py-2 text-sm font-bold">
+                Tentar a IA de novo
+              </button>
+            </>
+          )}
         </div>
         <div className="mt-3 border-t border-noite/10 pt-3">
           {!confirmar ? (

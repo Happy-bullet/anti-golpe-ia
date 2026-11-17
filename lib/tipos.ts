@@ -95,7 +95,8 @@ export interface UltimaLigacao {
 
 export interface EstadoEstande {
   ativo: boolean;
-  config: { duracaoS: number; aprovacaoManual: boolean; somNoCelular: boolean };
+  /** `economico`: a Vó usa as falas gravadas sempre que dá, e só gera voz na hora para o que sai do roteiro. */
+  config: { duracaoS: number; aprovacaoManual: boolean; somNoCelular: boolean; economico: boolean };
   chamada: ChamadaEstande | null;
   fila: { pid: string; id: string; nome: string; entrou: number; visto: number }[];
   audio: { n: number; texto: string; url: string | null };
@@ -103,6 +104,17 @@ export interface EstadoEstande {
   placarVovo: LinhaVovo[];
   placarQuiz: LinhaQuiz[];
   ligacoes: number;
+  /** De onde veio a voz das respostas: gravada (grátis), gerada na hora (gasta crédito) ou voz do navegador. */
+  voz: VozUsada;
+  /** Transcrição do microfone no servidor: falhas seguidas e até quando os celulares usam o navegador. */
+  ouvir: { falhas: number; pausadoAte: number };
+}
+
+export interface VozUsada {
+  gravadas: number;
+  aoVivo: number;
+  caracteres: number;
+  navegador: number;
 }
 
 /** O que os celulares e a TV recebem (sem o `pid` de ninguém). */
@@ -119,6 +131,8 @@ export interface VisaoEstande {
   placarVovo: Pick<LinhaVovo, "id" | "nome" | "truques" | "duracaoS">[];
   placarQuiz: Pick<LinhaQuiz, "id" | "nome" | "pontos" | "acertos">[];
   eu: { id: string; quizTentativas: number; quizMelhor: number } | null;
+  /** true: a transcrição no servidor está fora (cota ou falha), o celular usa o microfone do navegador. */
+  ouvirPausado: boolean;
 }
 
 export interface VisaoAdmin extends VisaoEstande {
@@ -126,8 +140,11 @@ export interface VisaoAdmin extends VisaoEstande {
   placarVovoCompleto: LinhaVovo[];
   placarQuizCompleto: LinhaQuiz[];
   ligacoes: number;
+  vozUsada: VozUsada;
   banco: "redis" | "memoria" | "nenhum";
   voz: boolean;
   vozIdInvalido?: boolean;
   ia: string;
+  /** false: sem chave do Gemini ou sem cota para transcrever o microfone neste servidor. */
+  audioNoServidor?: boolean;
 }

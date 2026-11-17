@@ -1,11 +1,13 @@
 import { NextResponse } from "next/server";
 import {
-  atender, avancar, desligar, entrarNaFila, iniciarQuiz, liberar, ocupar, registrarFalaDoGolpista, registrarQuiz, registrarResposta, sairDaFila, visao,
+  atender, avancar, desligar, entrarNaFila, iniciarQuiz, liberar, ocupar, ouvirPausado, registrarFalaDoGolpista, registrarFalhaAoOuvir, registrarOuvirOk,
+  registrarQuiz, registrarResposta, sairDaFila, visao,
 } from "@/lib/estande.mjs";
 import { mudarEstado, tipoDeBanco } from "@/lib/armazem";
 import { abertura, despedida, estadoAtual, pidValido } from "@/lib/estande-servidor";
 import { responderVovo } from "@/lib/vovo";
 import { transcrever } from "@/lib/ouvir";
+import { audioDisponivel } from "@/lib/ia";
 import { CARTAS, RODADAS, SEGUNDOS_POR_CARTA } from "@/lib/jogo";
 import { dentroDoLimite } from "@/lib/limite";
 
@@ -16,13 +18,19 @@ export const dynamic = "force-dynamic";
 const SEM_CACHE = { "cache-control": "no-store" };
 const responder = (corpo: unknown, status = 200) => NextResponse.json(corpo, { status, headers: SEM_CACHE });
 
+/** A visão do estado, mais o aviso de que este servidor não consegue transcrever (sem chave ou sem cota do Gemini). */
+function visaoDe(e: Parameters<typeof visao>[0], pid: string) {
+  const v = visao(e, pid, Date.now());
+  return { ...v, ouvirPausado: v.ouvirPausado || !audioDisponivel() };
+}
+
 // GET /api/estande?pid=...  -> o que o celular e a TV mostram (perguntam a cada 1 ou 2 segundos)
 export async function GET(req: Request) {
   if (tipoDeBanco() === "nenhum") return responder({ ativo: false, semBanco: true });
   const pid = new URL(req.url).searchParams.get("pid") || "";
   try {
     const e = await estadoAtual(pidValido(pid) ? pid : "");
-    return responder(visao(e, pidValido(pid) ? pid : "", Date.now()));
+    return responder(visaoDe(e, pidValido(pid) ? pid : ""));
   } catch (erro) {
     console.error("[anti-golpe] estande GET:", erro instanceof Error ? erro.message : erro);
     return responder({ ativo: false, erro: "Estado do estande indisponível." }, 503);
@@ -69,7 +77,7 @@ export async function POST(req: Request) {
 
   const agora = Date.now();
   const resposta = (e: Parameters<typeof visao>[0], extra: Record<string, unknown> = {}, status = 200) =>
-    responder({ ...visao(e, pid, Date.now()), ...extra }, status);
+    responder({ ...visaoDe(e, pid), ...extra }, status);
 
   try {
     switch (corpo.acao) {
@@ -105,22 +113,39 @@ export async function POST(req: Request) {
 
         let texto = String(corpo.texto || "").replace(/\s+/g, " ").trim().slice(0, 300);
         let falhaAoOuvir = false;
+        let tentouOuvir = false;
         if (!texto && corpo.audio) {
-          try {
-            texto = await transcrever(corpo.audio);
-          } catch (erro) {
-            falhaAoOuvir = true;
-            console.error("[anti-golpe] transcrição falhou:", erro instanceof Error ? erro.message : erro);
+          // Transcrição em pausa (cota da IA acabou ou falhou duas vezes): nem tenta, o celular usa o microfone do navegador.
+          if (ouvirPausado(vez.estado, agora) || !audioDisponivel()) falhaAoOuvir = true;
+          else {
+            tentouOuvir = true;
+            try {
+              texto = await transcrever(corpo.audio);
+            } catch (erro) {
+              falhaAoOuvir = true;
+              console.error("[anti-golpe] transcrição falhou:", erro instanceof Error ? erro.message : erro);
+            }
           }
         }
         if (!texto) {
-          const { estado } = await mudarEstado((e) => liberar(e, cid));
+          const { estado } = await mudarEstado((e) => {
+            liberar(e, cid);
+            if (falhaAoOuvir && tentouOuvir) registrarFalhaAoOuvir(e, Date.now(), !audioDisponivel());
+          });
           return resposta(estado, { erro: falhaAoOuvir ? "ouvir-falhou" : "nao-ouvi" }, 422);
         }
 
-        const fala = await mudarEstado((e) => registrarFalaDoGolpista(e, cid, texto));
+        const fala = await mudarEstado((e) => {
+          if (tentouOuvir) registrarOuvirOk(e);
+          return registrarFalaDoGolpista(e, cid, texto);
+        });
         if (!fala.retorno.ok) return resposta(fala.estado, { erro: "A ligação terminou." }, 409);
-        const r = await responderVovo(fala.retorno.historico, { curta: true });
+        const r = await responderVovo(fala.retorno.historico, {
+          curta: true,
+          economica: fala.estado.config.economico !== false,
+          tecnicasJaUsadas: fala.estado.chamada?.tecnicas || [],
+          semente: cid,
+        });
         const fim = await mudarEstado((e) => registrarResposta(e, cid, r, Date.now(), despedida));
         return resposta(fim.estado, { ouvido: texto, novas: fim.retorno.novas });
       }

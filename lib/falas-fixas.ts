@@ -75,6 +75,62 @@ export function falaDoRoteiro(tecnicas: string[], rodada: number): string {
   return opcoes[rodada % opcoes.length];
 }
 
+// Para cada fala do ROTEIRO (mesma ordem), o que a pessoa precisa ter dito para a fala fazer sentido.
+// null = serve para qualquer mensagem com aquele truque. As expressões são conferidas sem acento e em minúsculas.
+// Exemplo: "Ah, você é o gerente?" só sai se a pessoa falou em gerente; para "sou da polícia" a IA é que responde.
+const GATILHOS: Record<string, (RegExp | null)[]> = {
+  pressa: [null, null],
+  autoridade: [/banco/, /gerente/],
+  medo: [/bloque/, /process/],
+  isca: [/premio|sorteio|sortead|ganhou|ganhador/, /dinheiro|renda extra|lucro|investi/],
+  afeto: [/\bnet[oa]\b|netinh|sou eu/, /numero|celular (novo|quebrou|caiu)|\bchip\b/],
+  segredo: [/nao (conta|fala|comenta|avisa)|ninguem/, null],
+  dados: [/senha/, /codigo/],
+  dinheiro: [/\bpix\b/, null],
+  link: [/clic|link|acess/, /instal|baix|aplicativo|\bapp\b/],
+};
+
+function semAcento(texto: string): string {
+  return texto.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+/**
+ * Procura uma fala já gravada que responda bem à mensagem (custa zero crédito de voz e sai na hora).
+ * Regras: nunca repete uma fala já dita na ligação; só usa fala específica se a mensagem tiver o assunto dela;
+ * prefere responder ao truque que a pessoa ainda não tinha usado. `semente` desempata, para variar entre ligações.
+ * Devolve null quando nenhuma fala gravada serve (aí a IA improvisa).
+ */
+export function falaGravadaPara(tecnicas: string[], jaUsadas: string[], jaDitas: string[], mensagem = "", semente = 0): string | null {
+  const dito = semAcento(mensagem);
+  const candidatas: { fala: string; pontos: number }[] = [];
+  for (const t of tecnicas) {
+    (ROTEIRO[t] || []).forEach((fala, i) => {
+      if (jaDitas.includes(fala)) return;
+      const gatilho = GATILHOS[t]?.[i];
+      if (gatilho && !gatilho.test(dito)) return;
+      candidatas.push({ fala, pontos: (jaUsadas.includes(t) ? 0 : 2) + (gatilho ? 1 : 0) });
+    });
+  }
+  if (!candidatas.length) return null;
+  const melhor = Math.max(...candidatas.map((c) => c.pontos));
+  const empatadas = candidatas.filter((c) => c.pontos === melhor);
+  return empatadas[semente % empatadas.length].fala;
+}
+
+/**
+ * Plano B, para quando a IA não responde: uma fala gravada que ainda não foi dita na ligação.
+ * Tenta primeiro uma que combine com a mensagem, depois qualquer uma do truque, depois um desvio de assunto.
+ */
+export function falaReserva(tecnicas: string[], jaUsadas: string[], jaDitas: string[], mensagem: string, rodada: number): string {
+  const combina = falaGravadaPara(tecnicas, jaUsadas, jaDitas, mensagem, rodada);
+  if (combina) return combina;
+  const doTruque = tecnicas.flatMap((t) => ROTEIRO[t] || []).filter((f) => !jaDitas.includes(f));
+  if (doTruque.length) return doTruque[rodada % doTruque.length];
+  const desvios = DESVIOS.filter((f) => !jaDitas.includes(f));
+  if (desvios.length) return desvios[rodada % desvios.length];
+  return falaDoRoteiro(tecnicas, rodada);
+}
+
 /** Todas as falas fixas, na ordem em que são gravadas. */
 export function todasAsFalasFixas(): string[] {
   return [ABERTURA, ...Object.values(ROTEIRO).flat(), ...DESVIOS, ...ESPERAS, ...Object.values(DESPEDIDAS)];

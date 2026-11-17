@@ -5,7 +5,7 @@ import { detectarTecnicas, TECNICAS } from "./tecnicas.mjs";
 import { pedirJSON, provedorAtivo } from "./ia";
 import { PROMPT_VOVO } from "./prompt";
 import { reservarChamadaIA } from "./limite";
-import { falaDoRoteiro } from "./falas-fixas";
+import { falaGravadaPara, falaReserva } from "./falas-fixas";
 import { urlDoAudio } from "./voz-ia";
 import type { FalaVovo, RespostaVovo } from "./tipos";
 
@@ -19,19 +19,41 @@ function cortarEmFrase(fala: string, max: number): string {
 
 const IDS = new Set(TECNICAS.map((t) => t.id));
 
-/** `curta`: no estande a ligação tem tempo contado, então a Vó responde em até duas frases. */
-export async function responderVovo(historico: FalaVovo[], opcoes: { curta?: boolean } = {}): Promise<RespostaVovo> {
-  const r = await pensarResposta(historico, !!opcoes.curta);
+export interface OpcoesVovo {
+  /** No estande a ligação tem tempo contado, então a Vó responde em até duas frases. */
+  curta?: boolean;
+  /**
+   * Modo econômico: quando a pessoa usa um truque conhecido, a Vó responde com uma fala já gravada
+   * (sem chamar a IA e sem gastar crédito de voz). A IA e a voz ao vivo ficam para o que sai do roteiro.
+   */
+  economica?: boolean;
+  /** Truques que a pessoa já usou nesta ligação (o modo econômico responde primeiro ao truque novo). */
+  tecnicasJaUsadas?: string[];
+  /** Número que muda a cada ligação, para variar qual fala gravada sai primeiro. */
+  semente?: number;
+}
+
+export async function responderVovo(historico: FalaVovo[], opcoes: OpcoesVovo = {}): Promise<RespostaVovo> {
+  const r = await pensarResposta(historico, opcoes);
   return { ...r, audio: urlDoAudio(r.fala) };
 }
 
-async function pensarResposta(historico: FalaVovo[], curta: boolean): Promise<Omit<RespostaVovo, "audio">> {
+async function pensarResposta(historico: FalaVovo[], opcoes: OpcoesVovo): Promise<Omit<RespostaVovo, "audio">> {
+  const curta = !!opcoes.curta;
   const ultima = [...historico].reverse().find((f) => f.de === "golpista")?.texto || "";
   const porRegras = detectarTecnicas(ultima);
   const rodada = historico.filter((f) => f.de === "golpista").length;
+  const jaUsadas = opcoes.tecnicasJaUsadas || [];
+  const jaDitas = historico.filter((f) => f.de === "vovo").map((f) => f.texto);
+  const gravadaPara = (tecnicas: string[]) => (opcoes.economica ? falaGravadaPara(tecnicas, jaUsadas, jaDitas, ultima, opcoes.semente || 0) : null);
+  // Sem IA (sem chave, sem cota ou erro), a Vó segue o roteiro gravado sem repetir fala.
+  const peloRoteiro = (): Omit<RespostaVovo, "audio"> => ({ fala: falaReserva(porRegras, jaUsadas, jaDitas, ultima, rodada), tecnicas: porRegras, fonte: "roteiro" });
+
+  const prontaPorRegras = gravadaPara(porRegras);
+  if (prontaPorRegras) return { fala: prontaPorRegras, tecnicas: porRegras, fonte: "roteiro" };
 
   if (provedorAtivo() === "offline" || !reservarChamadaIA()) {
-    return { fala: falaDoRoteiro(porRegras, rodada), tecnicas: porRegras, fonte: "roteiro" };
+    return peloRoteiro();
   }
 
   try {
@@ -51,9 +73,13 @@ async function pensarResposta(historico: FalaVovo[], curta: boolean): Promise<Om
     const fala = cortarEmFrase(String(dados.fala || "").trim(), curta ? 220 : 400);
     if (!fala) throw new Error("fala vazia");
     const daIA = Array.isArray(dados.tecnicas) ? dados.tecnicas.map(String).filter((id) => IDS.has(id)) : [];
-    return { fala, tecnicas: Array.from(new Set([...daIA, ...porRegras])), fonte: "ia" };
+    const tecnicas = Array.from(new Set([...daIA, ...porRegras]));
+    // Truque que só a IA reconheceu: no modo econômico ainda vale a fala gravada dele.
+    const prontaPelaIA = gravadaPara(tecnicas);
+    if (prontaPelaIA) return { fala: prontaPelaIA, tecnicas, fonte: "roteiro" };
+    return { fala, tecnicas, fonte: "ia" };
   } catch (erro) {
     console.error("[anti-golpe] Vó Zilda caiu no roteiro:", erro instanceof Error ? erro.message : erro);
-    return { fala: falaDoRoteiro(porRegras, rodada), tecnicas: porRegras, fonte: "roteiro" };
+    return peloRoteiro();
   }
 }

@@ -34,6 +34,7 @@ export default function VovoEstande({ aoSairDoModo }: { aoSairDoModo: () => void
 
   const mic = useRef<Microfone | null>(null);
   const gravandoRef = useRef(false);
+  const gravandoPeloNavegador = useRef(false);
   const apertou = useRef(0);
   const modoToque = useRef(false);
   const limite = useRef<ReturnType<typeof setTimeout>>();
@@ -118,7 +119,9 @@ export default function VovoEstande({ aoSairDoModo }: { aoSairDoModo: () => void
     setAviso("");
     setOcupado(true);
     destravarAudio();
-    if (temMicrofone()) {
+    // Se o servidor já avisou que não transcreve e o navegador sabe ouvir, nem abre o microfone próprio.
+    if (visao?.ouvirPausado && podeOuvir()) setMicOk(false);
+    else if (temMicrofone()) {
       try {
         mic.current = mic.current || new Microfone();
         await mic.current.preparar();
@@ -145,12 +148,21 @@ export default function VovoEstande({ aoSairDoModo }: { aoSairDoModo: () => void
     setAviso(AVISOS[r.erro || ""] || r.erro || "Não deu para enviar.");
   }
 
+  // Quando a transcrição no servidor está fora (cota da IA ou falha), o celular usa o reconhecimento de voz do navegador.
+  function peloNavegador() {
+    return micDoNavegador || !!visao?.ouvirPausado || !mic.current?.pronto;
+  }
+
   function comecarGravacao() {
     if (ocupado || c?.pensando) return;
     setAviso("");
-    if (micDoNavegador || !mic.current?.pronto) {
+    if (peloNavegador()) {
       if (!podeOuvir()) return;
+      // Solta o microfone próprio antes: em alguns celulares o reconhecimento de voz não ouve nada com ele aberto.
+      mic.current?.soltar();
+      mic.current = null;
       gravandoRef.current = true;
+      gravandoPeloNavegador.current = true;
       setGravando(true);
       pararNavegador.current = ouvir(
         (dito) => enviar({ texto: dito }),
@@ -161,8 +173,9 @@ export default function VovoEstande({ aoSairDoModo }: { aoSairDoModo: () => void
       );
       return;
     }
-    mic.current.iniciar();
+    mic.current!.iniciar();
     gravandoRef.current = true;
+    gravandoPeloNavegador.current = false;
     setGravando(true);
     clearTimeout(limite.current);
     limite.current = setTimeout(terminarGravacao, 14_000);
@@ -173,11 +186,11 @@ export default function VovoEstande({ aoSairDoModo }: { aoSairDoModo: () => void
     gravandoRef.current = false;
     setGravando(false);
     clearTimeout(limite.current);
-    if (micDoNavegador || !mic.current?.pronto) {
+    if (gravandoPeloNavegador.current) {
       pararNavegador.current();
       return;
     }
-    const g = mic.current.parar();
+    const g = mic.current?.parar();
     if (!g || g.nivel < NIVEL_MINIMO) {
       setAviso(AVISOS["nao-ouvi"]);
       return;
@@ -206,7 +219,7 @@ export default function VovoEstande({ aoSairDoModo }: { aoSairDoModo: () => void
   }
 
   const restam = c ? Math.max(0, (c.fim - agoraNoServidor()) / 1000) : 0;
-  const temBotaoDeVoz = micOk === true || (podeOuvir() && (micOk === false || micDoNavegador));
+  const temBotaoDeVoz = micOk !== null && (peloNavegador() ? podeOuvir() : true);
   const truques = c?.tecnicas || resultado?.tecnicas || [];
 
   const cartela = (
