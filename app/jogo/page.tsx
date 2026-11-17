@@ -5,6 +5,23 @@ import Carimbo from "@/components/Carimbo";
 import { RODADAS, SEGUNDOS_POR_CARTA, sortearPartida, tituloDoPlacar, type Carta } from "@/lib/jogo";
 import { destacar } from "@/lib/destacar";
 import { analisarComRegras } from "@/lib/regras.mjs";
+import { guardarNome, meuNome, meuPid } from "@/lib/participante";
+import type { VisaoEstande } from "@/lib/tipos";
+
+const MAX_TENTATIVAS = 3;
+
+/** Fala com o estande (placar da TV). Devolve null se o servidor não respondeu. */
+async function estande(corpo?: Record<string, unknown>): Promise<(Partial<VisaoEstande> & { erro?: string; restam?: number; ok?: boolean }) | null> {
+  try {
+    const pid = meuPid();
+    const r = corpo
+      ? await fetch("/api/estande", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ ...corpo, pid }) })
+      : await fetch(`/api/estande?pid=${pid}`, { cache: "no-store" });
+    return await r.json();
+  } catch {
+    return null;
+  }
+}
 
 type Fase = "inicio" | "jogando" | "resposta" | "fim";
 interface Linha {
@@ -42,15 +59,46 @@ export default function Jogo() {
   const [nome, setNome] = useState("");
   const [salvo, setSalvo] = useState(false);
   const proximo = useRef<HTMLButtonElement>(null);
+  // Modo estande: nome obrigatório, 3 tentativas por pessoa e placar na TV.
+  const [noEstande, setNoEstande] = useState(false);
+  const [restam, setRestam] = useState(MAX_TENTATIVAS);
+  const [placarTV, setPlacarTV] = useState<VisaoEstande["placarQuiz"]>([]);
+  const [meuId, setMeuId] = useState("");
+  const [aviso, setAviso] = useState("");
+  const [entrando, setEntrando] = useState(false);
+  const respostas = useRef<{ id: number; golpe: boolean | null; resta: number }[]>([]);
 
   const carta = cartas[indice];
 
   useEffect(() => setRanking(lerRanking()), []);
 
+  useEffect(() => {
+    setNome(meuNome());
+    estande().then((v) => {
+      if (!v?.ativo) return;
+      setNoEstande(true);
+      setRestam(MAX_TENTATIVAS - (v.eu?.quizTentativas || 0));
+      setPlacarTV(v.placarQuiz || []);
+      setMeuId(v.eu?.id || "");
+    });
+  }, []);
+
+  // No estande, o resultado vai para o placar da TV assim que a partida termina.
+  useEffect(() => {
+    if (fase !== "fim" || !noEstande || salvo) return;
+    setSalvo(true);
+    estande({ acao: "quiz-fim", respostas: respostas.current }).then((v) => {
+      if (v?.placarQuiz) setPlacarTV(v.placarQuiz);
+      if (typeof v?.restam === "number") setRestam(v.restam);
+      if (!v || v.erro) setAviso("Não deu para enviar o resultado para a TV. Mostre esta tela para o Guilherme.");
+    });
+  }, [fase, noEstande, salvo]);
+
   const responder = useCallback(
     (disseGolpe: boolean | null) => {
       if (fase !== "jogando" || !carta) return;
       const certo = disseGolpe !== null && disseGolpe === carta.golpe;
+      respostas.current.push({ id: carta.id, golpe: disseGolpe, resta });
       setAcertou(disseGolpe === null ? null : certo);
       if (certo) {
         setAcertos((a) => a + 1);
@@ -73,7 +121,24 @@ export default function Jogo() {
     return () => clearTimeout(t);
   }, [fase, resta, responder]);
 
-  function comecar() {
+  async function comecar() {
+    setAviso("");
+    if (noEstande) {
+      setEntrando(true);
+      const v = await estande({ acao: "quiz-iniciar", nome });
+      setEntrando(false);
+      if (v && v.ativo === false) setNoEstande(false);
+      else if (!v || v.erro) {
+        if (typeof v?.restam === "number") setRestam(v.restam);
+        setAviso(v?.erro || "Sem conexão com o estande. Tente de novo.");
+        setFase("inicio");
+        return;
+      } else {
+        guardarNome(nome.trim());
+        if (typeof v.restam === "number") setRestam(v.restam);
+      }
+    }
+    respostas.current = [];
     setCartas(sortearPartida());
     setIndice(0);
     setPontos(0);
@@ -115,11 +180,54 @@ export default function Jogo() {
             <p className="mt-4 max-w-md text-xl leading-snug text-white/90">
               {RODADAS} mensagens. {SEGUNDOS_POR_CARTA} segundos para cada uma. Quanto mais rápido você acerta, mais pontos faz.
             </p>
-            <button onClick={comecar} className="mt-6 w-full rounded-2xl bg-faixa px-6 py-4 font-display text-2xl font-extrabold text-noite transition active:scale-[0.98] sm:w-auto">
+            {noEstande && (
+              <div className="mt-5 max-w-md">
+                <label htmlFor="nome-quiz" className="block font-bold">
+                  Seu nome (aparece no placar da TV)
+                </label>
+                <input
+                  id="nome-quiz"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  maxLength={16}
+                  autoComplete="given-name"
+                  placeholder="Ex.: Ana"
+                  className="mt-2 w-full rounded-2xl border-2 border-white/30 bg-white/10 px-4 py-3 text-xl font-bold text-white placeholder:text-white/40 focus:border-faixa focus:outline-none"
+                />
+                <p className="mt-2 text-white/80">
+                  {restam > 0 ? `Você pode jogar ${restam === 1 ? "mais 1 vez" : `mais ${restam} vezes`}. Vale a sua melhor pontuação.` : "Você já jogou as 3 vezes. Vale a sua melhor pontuação."}
+                </p>
+              </div>
+            )}
+            {aviso && (
+              <p role="alert" className="mt-3 max-w-md rounded-lg bg-golpe/25 p-3 font-bold">
+                {aviso}
+              </p>
+            )}
+            <button
+              onClick={comecar}
+              disabled={entrando || (noEstande && (restam <= 0 || nome.trim().length < 2))}
+              className="mt-6 w-full rounded-2xl bg-faixa px-6 py-4 font-display text-2xl font-extrabold text-noite transition active:scale-[0.98] disabled:opacity-50 sm:w-auto"
+            >
               Começar
             </button>
 
-            {ranking.length > 0 && (
+            {noEstande && placarTV.length > 0 && (
+              <div className="mt-10">
+                <h2 className="font-display text-2xl font-extrabold">Placar da TV</h2>
+                <ol className="mt-3 divide-y divide-white/10">
+                  {placarTV.map((l, i) => (
+                    <li key={l.id} className={`flex items-baseline gap-3 py-2 text-lg ${l.id === meuId ? "text-faixa" : ""}`}>
+                      <span className="w-6 font-display font-extrabold text-faixa">{i + 1}</span>
+                      <span className="flex-1 truncate font-bold">{l.nome}</span>
+                      <span className="w-20 text-right font-display font-extrabold">{l.pontos}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {!noEstande && ranking.length > 0 && (
               <div className="mt-10">
                 <h2 className="font-display text-2xl font-extrabold">Placar de hoje</h2>
                 <ol className="mt-3 divide-y divide-white/10">
@@ -206,7 +314,23 @@ export default function Jogo() {
                 : "Na dúvida, não clique e não pague: cole a mensagem no Anti-Golpe IA antes."}
             </p>
 
-            {!salvo ? (
+            {noEstande ? (
+              <div className="mt-6">
+                <p className="text-lg font-bold" style={{ color: "#3DDC97" }}>
+                  {aviso || "Seu resultado está no placar da TV."}
+                </p>
+                <p className="mt-1 text-white/80">{restam > 0 ? `Você ainda pode jogar ${restam === 1 ? "mais 1 vez" : `mais ${restam} vezes`}.` : "Você usou as 3 tentativas."}</p>
+                <ol className="mt-4 divide-y divide-white/10">
+                  {placarTV.map((l, i) => (
+                    <li key={l.id} className={`flex items-baseline gap-3 py-2 text-lg ${l.id === meuId ? "text-faixa" : ""}`}>
+                      <span className="w-6 font-display font-extrabold text-faixa">{i + 1}</span>
+                      <span className="flex-1 truncate font-bold">{l.nome}</span>
+                      <span className="w-20 text-right font-display font-extrabold">{l.pontos}</span>
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ) : !salvo ? (
               <div className="mt-6 flex flex-wrap gap-2">
                 <label htmlFor="nome" className="sr-only">
                   Seu nome para o placar
@@ -229,7 +353,7 @@ export default function Jogo() {
               </p>
             )}
 
-            {ranking.length > 0 && (
+            {!noEstande && ranking.length > 0 && (
               <ol className="mt-6 divide-y divide-white/10">
                 {ranking.map((l, i) => (
                   <li key={i} className="flex items-baseline gap-3 py-2 text-lg">
@@ -244,7 +368,11 @@ export default function Jogo() {
               </ol>
             )}
 
-            <button onClick={comecar} className="mt-8 w-full rounded-2xl border-2 border-faixa px-6 py-4 font-display text-2xl font-extrabold text-faixa transition active:scale-[0.98] sm:w-auto">
+            <button
+              onClick={comecar}
+              disabled={entrando || (noEstande && restam <= 0)}
+              className="mt-8 w-full rounded-2xl border-2 border-faixa px-6 py-4 font-display text-2xl font-extrabold text-faixa transition active:scale-[0.98] disabled:opacity-40 sm:w-auto"
+            >
               Jogar de novo
             </button>
           </section>

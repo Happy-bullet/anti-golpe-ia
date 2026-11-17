@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   if (!texto || !assinaturaValida(texto, qualidade, s)) {
     return NextResponse.json({ erro: "Fala não reconhecida." }, { status: 403 });
   }
-  if (!dentroDoLimite(`voz:${ipDoPedido(req)}`, 40)) {
+  if (!dentroDoLimite(`voz:${ipDoPedido(req)}`, 240)) {
     return NextResponse.json({ erro: "Muitas falas seguidas." }, { status: 429 });
   }
 

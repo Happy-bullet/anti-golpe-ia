@@ -1,6 +1,6 @@
 # Resultados — só regras locais (modo offline)
 
-Gerado em 13/11/2026, 08:54:51
+Gerado em 16/11/2026, 22:08:49
 
 ### Todas (64 mensagens)
 

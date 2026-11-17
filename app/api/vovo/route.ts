@@ -8,7 +8,7 @@ export const maxDuration = 45;
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  if (!dentroDoLimite(`vovo:${ipDoPedido(req)}`, 30)) {
+  if (!dentroDoLimite(`vovo:${ipDoPedido(req)}`, 120)) {
     return NextResponse.json({ erro: "A Vó Zilda precisa de um minutinho pra respirar. Tente de novo já já." }, { status: 429 });
   }
 

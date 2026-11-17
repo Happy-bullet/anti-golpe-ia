@@ -76,3 +76,38 @@ node scripts/gravar-falas.mjs
 São cerca de 2.500 caracteres no modelo de alta qualidade. Depois disso, publique os arquivos novos (`public/falas/` e `lib/falas-gravadas.json`).
 
 Se trocar a voz, grave de novo com `node scripts/gravar-falas.mjs --refazer`.
+
+## 7. Modo estande (fila, ligação única, TV e placares)
+
+No dia da Mostra a Vó Zilda atende **uma pessoa por vez**:
+
+1. A pessoa aponta a câmera para o QR code da TV, escreve o nome e entra na fila. O celular mostra a posição e o tempo de espera.
+2. Você toca em **Liberar a próxima ligação** no painel (`/admin`). Nada começa sozinho.
+3. A pessoa toca em **Ligar para a Vó** no celular dela. A ligação dura 2 minutos (ajustável) e aparece na TV (`/tv`), com a voz da Vó saindo do notebook ligado à TV ou à caixa de som.
+4. O celular é o microfone: a pessoa **segura o botão para falar**, com o celular perto da boca. Também dá para escrever.
+5. No fim, o nome entra no placar com a quantidade de truques usados. Quem usar os 9 ganha.
+6. O quiz "É golpe ou não?" pede o nome, deixa jogar 3 vezes e vale a melhor pontuação.
+
+### Preparar (uma vez)
+
+- **Banco Redis**: Vercel → Storage → conecte um banco Upstash for Redis ao projeto `anti-golpe-ia` (pode ser um banco que você já tem: as chaves do estande começam com `ag:estande`).
+- **Senha do painel**: variável `ESTANDE_SENHA` na Vercel.
+- Publique de novo (Redeploy).
+
+### No dia
+
+| Tela | Endereço | Onde abrir |
+|---|---|---|
+| TV | `/tv` | Notebook ligado à TV, no Edge, em tela cheia. Clique em "Ligar o som da TV". |
+| Painel | `/admin` | No seu celular. Ligue o "Modo estande". |
+| Visitante | `/vovo` | Celular de quem escaneia o QR code. |
+
+Com o modo estande desligado (ou sem internet), `/vovo` volta a ser a Vó de sempre, cada um no próprio celular.
+
+### Testes
+
+```powershell
+cd app
+npm run testar-estande                                   # regras da fila, tempo, aprovação e placares
+node --env-file=.env.local scripts/testar-ouvir.mjs "..\05 - Testes\microfone\2-com-barulho.wav"   # transcrição com barulho
+```

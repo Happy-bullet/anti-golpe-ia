@@ -47,3 +47,87 @@ export interface RespostaVovo {
   fonte: "ia" | "roteiro";
   audio?: string | null; // MP3 da fala (gravado ou /api/voz assinado); null = usar a voz do navegador
 }
+
+// ---------- modo estande (fila, ligação única, placares) ----------
+
+export interface ChamadaEstande {
+  cid: number;
+  pid: string; // segredo do celular de quem está ligando
+  id: string; // identificador público
+  nome: string;
+  fase: "chamando" | "ativa";
+  expira: number;
+  inicio: number;
+  fim: number;
+  falas: FalaVovo[];
+  tecnicas: string[];
+  pensando: number; // 0 ou a hora em que a fala começou a ser processada
+}
+
+export interface LinhaVovo {
+  id: string;
+  nome: string;
+  truques: number;
+  duracaoS: number;
+  quando: number;
+  vezes: number;
+}
+
+export interface LinhaQuiz {
+  id: string;
+  nome: string;
+  pontos: number;
+  acertos: number;
+  tentativas: number;
+  quando: number;
+}
+
+export interface UltimaLigacao {
+  tipo: "fim" | "perdeu";
+  motivo?: "tempo" | "venceu" | "desligou" | "admin";
+  nome: string;
+  id: string;
+  truques?: number;
+  tecnicas?: string[];
+  duracaoS?: number;
+  quando: number;
+}
+
+export interface EstadoEstande {
+  ativo: boolean;
+  config: { duracaoS: number; aprovacaoManual: boolean; somNoCelular: boolean };
+  chamada: ChamadaEstande | null;
+  fila: { pid: string; id: string; nome: string; entrou: number; visto: number }[];
+  audio: { n: number; texto: string; url: string | null };
+  ultima: UltimaLigacao | null;
+  placarVovo: LinhaVovo[];
+  placarQuiz: LinhaQuiz[];
+  ligacoes: number;
+}
+
+/** O que os celulares e a TV recebem (sem o `pid` de ninguém). */
+export interface VisaoEstande {
+  agora: number;
+  ativo: boolean;
+  config: EstadoEstande["config"];
+  chamada: (Omit<ChamadaEstande, "pid" | "id" | "pensando"> & { pensando: boolean; sua: boolean }) | null;
+  fila: string[];
+  posicao: number;
+  esperaS: number;
+  audio: EstadoEstande["audio"];
+  ultima: UltimaLigacao | null;
+  placarVovo: Pick<LinhaVovo, "id" | "nome" | "truques" | "duracaoS">[];
+  placarQuiz: Pick<LinhaQuiz, "id" | "nome" | "pontos" | "acertos">[];
+  eu: { id: string; quizTentativas: number; quizMelhor: number } | null;
+}
+
+export interface VisaoAdmin extends VisaoEstande {
+  filaCompleta: { id: string; nome: string; entrou: number; visto: number }[];
+  placarVovoCompleto: LinhaVovo[];
+  placarQuizCompleto: LinhaQuiz[];
+  ligacoes: number;
+  banco: "redis" | "memoria" | "nenhum";
+  voz: boolean;
+  vozIdInvalido?: boolean;
+  ia: string;
+}

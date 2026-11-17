@@ -12,6 +12,8 @@ interface Pedido {
   sistema: string;
   pedido: string;
   imagem?: Imagem;
+  /** Áudio para transcrever. Só o Gemini aceita. */
+  audio?: Imagem;
   maxTokens?: number;
   temperatura?: number;
   /** Quanto o modelo "pensa" antes de responder. Menos = mais rápido. */
@@ -55,6 +57,7 @@ export function extrairObjeto(texto: string): Record<string, unknown> {
 async function chamarGemini(modelo: string, p: Pedido): Promise<string> {
   const partes: unknown[] = [];
   if (p.imagem) partes.push({ inlineData: { mimeType: p.imagem.mime, data: p.imagem.base64 } });
+  if (p.audio) partes.push({ inlineData: { mimeType: p.audio.mime, data: p.audio.base64 } });
   partes.push({ text: p.pedido });
   const base = process.env.GEMINI_URL_BASE || "https://generativelanguage.googleapis.com"; // trocável só para testes
 
@@ -92,6 +95,7 @@ async function chamarGemini(modelo: string, p: Pedido): Promise<string> {
 }
 
 async function chamarClaude(modelo: string, p: Pedido): Promise<string> {
+  if (p.audio) throw new Error("Claude não recebe áudio");
   const conteudo: unknown[] = [];
   if (p.imagem) conteudo.push({ type: "image", source: { type: "base64", media_type: p.imagem.mime, data: p.imagem.base64 } });
   conteudo.push({ type: "text", text: p.pedido });

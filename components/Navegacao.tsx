@@ -36,7 +36,7 @@ export default function Navegacao() {
     } catch {}
   }, [grande]);
 
-  if (caminho === "/estande") return null;
+  if (caminho === "/estande" || caminho === "/tv" || caminho === "/admin") return null;
 
   return (
     <>

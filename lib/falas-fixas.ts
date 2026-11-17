@@ -59,6 +59,14 @@ export const ESPERAS = [
   "Espera um tiquinho...",
 ];
 
+/** Falas que encerram a ligação no modo estande. */
+export const DESPEDIDAS: Record<string, string> = {
+  tempo: "Ih, meu filho, a novela começou. Vou desligar. Fica com Deus!",
+  venceu: "Ara! Você usou todos os truques de golpista. Mas da Vó Zilda você não leva nem um pão de queijo. Tchau!",
+  desligou: "Uai, desligou? Esse povo de hoje não tem paciência.",
+  admin: "Ô gente, o Juninho chegou. Depois a gente conversa. Tchau!",
+};
+
 export function falaDoRoteiro(tecnicas: string[], rodada: number): string {
   const novas = tecnicas.filter((t) => ROTEIRO[t]);
   if (!novas.length) return DESVIOS[rodada % DESVIOS.length];
@@ -69,5 +77,5 @@ export function falaDoRoteiro(tecnicas: string[], rodada: number): string {
 
 /** Todas as falas fixas, na ordem em que são gravadas. */
 export function todasAsFalasFixas(): string[] {
-  return [ABERTURA, ...Object.values(ROTEIRO).flat(), ...DESVIOS, ...ESPERAS];
+  return [ABERTURA, ...Object.values(ROTEIRO).flat(), ...DESVIOS, ...ESPERAS, ...Object.values(DESPEDIDAS)];
 }

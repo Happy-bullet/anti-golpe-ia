@@ -9,7 +9,7 @@ export const maxDuration = 45;
 export const dynamic = "force-dynamic";
 
 const MIMES_OK = ["image/png", "image/jpeg", "image/webp", "image/gif"];
-const PEDIDOS_POR_MINUTO = Number(process.env.LIMITE_POR_MINUTO || 20);
+const PEDIDOS_POR_MINUTO = Number(process.env.LIMITE_POR_MINUTO || 120);
 
 export async function GET() {
   return NextResponse.json({ ok: true, provedor: provedorAtivo() });
