@@ -126,7 +126,7 @@ O app aceita até 10 chaves de cada. Quando uma para, a próxima assume sozinha,
 | `ELEVENLABS_API_KEY_2`, `_3`... | A chave de cada conta (permissão Text to Speech; marque também User: Read para o painel mostrar o saldo). |
 | `ELEVENLABS_VOICE_ID_2`, `_3`... | O ID de uma voz criada **naquela** conta. A voz da conta 1 não existe nas outras. |
 
-No painel, **Contas de voz** e **Chaves de IA** mostram cada uma pelo número: funcionando, ou parada e por quê (sem crédito, bloqueada, chave recusada, voz não encontrada). **Tentar as contas de voz de novo** limpa as pausas. Depois de criar ou mudar variáveis, publique de novo (Redeploy).
+No painel, **Contas de voz** e **Chaves de IA** mostram cada uma pelo número: funcionando, ou parada e por quê (sem crédito, bloqueada, chave recusada, voz não encontrada). **Testar cada conta** pede "Alô?" a cada conta (cerca de 3 créditos cada) e mostra qual funciona; use depois de criar as variáveis. **Tentar as contas de voz de novo** limpa as pausas. Depois de criar ou mudar variáveis, publique de novo (Redeploy).
 
 ### Testes
 

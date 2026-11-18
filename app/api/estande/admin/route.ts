@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import { acaoDoAdmin, avancar, visaoAdmin } from "@/lib/estande.mjs";
 import { mudarEstado, tipoDeBanco } from "@/lib/armazem";
 import { despedida, estadoAtual } from "@/lib/estande-servidor";
-import { estadoDasContas, limparPausasDaVoz, problemasDeConfiguracao, vozConfigurada, vozIdInvalido } from "@/lib/voz-ia";
+import { estadoDasContas, limparPausasDaVoz, problemasDeConfiguracao, testarContas, vozConfigurada, vozIdInvalido } from "@/lib/voz-ia";
 import { audioDisponivel, estadoDasChavesDeIA, limparPausasDaIA, provedoresDisponiveis } from "@/lib/ia";
 import { dentroDoLimite, ipDoPedido } from "@/lib/limite";
 
@@ -64,6 +64,10 @@ export async function POST(req: Request) {
     const agora = Date.now();
     if (corpo.acao === "testar-microfone") await limparPausasDaIA();
     if (corpo.acao === "tentar-vozes") await limparPausasDaVoz();
+    if (corpo.acao === "testar-contas") {
+      const testeDeContas = await testarContas();
+      return responder(await painel(await estadoAtual("", 0), { testeDeContas }));
+    }
     const { estado, retorno } = await mudarEstado((e) => {
       avancar(e, agora, despedida);
       return acaoDoAdmin(e, String(corpo.acao || ""), corpo, agora, despedida) as { ok: boolean; erro?: string };

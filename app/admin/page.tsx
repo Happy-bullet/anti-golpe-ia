@@ -32,6 +32,17 @@ export default function Admin() {
   const [digitada, setDigitada] = useState("");
   const [aviso, setAviso] = useState("");
   const [confirmar, setConfirmar] = useState(false);
+  const [teste, setTeste] = useState<{ n: number; ok: boolean; ms: number; motivo: string }[] | null>(null);
+  const [testando, setTestando] = useState(false);
+
+  async function testarContas() {
+    setTestando(true);
+    setTeste(null);
+    const r = await acao({ acao: "testar-contas" });
+    setTestando(false);
+    if (Array.isArray(r.testeDeContas)) setTeste(r.testeDeContas as { n: number; ok: boolean; ms: number; motivo: string }[]);
+    else setAviso(r.erro || "O teste não respondeu.");
+  }
 
   useEffect(() => {
     try {
@@ -371,9 +382,28 @@ export default function Admin() {
               </li>
             ))}
           </ul>
-          <button onClick={() => fazer({ acao: "tentar-vozes" })} className="mt-2 rounded-xl border-2 border-noite/30 px-3 py-2 text-sm font-bold">
-            Tentar as contas de voz de novo
-          </button>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button
+              onClick={testarContas}
+              disabled={testando || !(visao.contasDeVoz || []).length}
+              className="rounded-xl bg-tinta px-3 py-2 text-sm font-bold text-white disabled:opacity-50"
+            >
+              {testando ? "Testando…" : "Testar cada conta"}
+            </button>
+            <button onClick={() => fazer({ acao: "tentar-vozes" })} className="rounded-xl border-2 border-noite/30 px-3 py-2 text-sm font-bold">
+              Tentar as contas de voz de novo
+            </button>
+          </div>
+          <p className="mt-1 text-sm text-noite/70">O teste pede &quot;Alô?&quot; a cada conta (cerca de 3 créditos por conta).</p>
+          {teste && (
+            <ul aria-live="polite" className="mt-2 space-y-1 rounded-lg bg-noite/5 p-2 text-sm">
+              {teste.map((t) => (
+                <li key={t.n} className={t.ok ? "text-noite" : "font-bold text-golpe"}>
+                  Conta {t.n}: {t.ok ? `falou em ${(t.ms / 1000).toFixed(1).replace(".", ",")} s` : t.motivo}
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
         <div className="mt-3 border-t border-noite/10 pt-3">
           {!confirmar ? (

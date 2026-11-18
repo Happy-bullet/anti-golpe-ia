@@ -13,7 +13,7 @@ import { createHash, createHmac, timingSafeEqual } from "node:crypto";
 import gravadas from "./falas-gravadas.json";
 import { contasElevenLabs, contasSemVoz, vozesInvalidas } from "./chaves.mjs";
 import { comandoRedis } from "./armazem";
-import { limparPausas, pausar, pausasAtivas } from "./pausas";
+import { limparPausas, pausar, pausasAtivas, tirarPausa } from "./pausas";
 
 const URL_BASE = process.env.ELEVENLABS_URL_BASE || "https://api.elevenlabs.io";
 const TEMPO_LIMITE_MS = 9000;
@@ -245,6 +245,51 @@ async function saldoDaConta(c: Conta): Promise<{ usados: number; limite: number 
   } catch {}
   saldos.set(c.n, { quando: Date.now(), valor });
   return valor;
+}
+
+export interface ResultadoDoTeste {
+  n: number;
+  ok: boolean;
+  ms: number;
+  motivo: string;
+}
+
+/**
+ * Botão "Testar cada conta" do painel: pede a palavra "Alô?" a cada conta, mesmo as que estão em pausa,
+ * para descobrir antes da feira qual chave, voz ou conta tem problema. Gasta uns 3 créditos por conta.
+ * Conta que funcionou sai da pausa; conta com problema entra em pausa com o motivo.
+ */
+export async function testarContas(): Promise<ResultadoDoTeste[]> {
+  const corpo = JSON.stringify({ text: "Alô?", model_id: process.env.ELEVENLABS_MODELO || "eleven_flash_v2_5", language_code: "pt" });
+  return Promise.all(
+    contas().map(async (conta): Promise<ResultadoDoTeste> => {
+      const inicio = Date.now();
+      try {
+        const r = await fetch(`${URL_BASE}/v1/text-to-speech/${encodeURIComponent(conta.voz)}?output_format=mp3_22050_32`, {
+          method: "POST",
+          headers: { "xi-api-key": conta.chave, "content-type": "application/json", accept: "audio/mpeg" },
+          body: corpo,
+          signal: AbortSignal.timeout(TEMPO_LIMITE_MS),
+        });
+        const ms = Date.now() - inicio;
+        if (r.ok) {
+          const audio = await r.arrayBuffer();
+          if (audio.byteLength < 300) return { n: conta.n, ok: false, ms, motivo: "áudio vazio" };
+          await tirarPausa("voz", nomeDaConta(conta.n));
+          saldos.delete(conta.n);
+          return { n: conta.n, ok: true, ms, motivo: "" };
+        }
+        const detalhe = semSegredo(await r.text().catch(() => ""));
+        const erro = lerErroDaConta(r.status, detalhe);
+        console.error(`[anti-golpe] teste da conta ${conta.n}: ${r.status} (${erro.motivo}): ${detalhe}`);
+        if (erro.daConta && erro.motivo !== "ocupada") await pausar("voz", nomeDaConta(conta.n), erro.ms, erro.motivo);
+        return { n: conta.n, ok: false, ms, motivo: erro.motivo };
+      } catch (e) {
+        console.error(`[anti-golpe] teste da conta ${conta.n} sem resposta:`, semSegredo(e instanceof Error ? e.message : String(e)));
+        return { n: conta.n, ok: false, ms: Date.now() - inicio, motivo: "a ElevenLabs não respondeu" };
+      }
+    }),
+  );
 }
 
 /** Botão "Tentar as vozes de novo" do painel: esquece as pausas das contas. */

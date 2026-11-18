@@ -55,6 +55,14 @@ export async function pausar(grupo: Grupo, quem: string, ms: number, motivo: str
   } catch {}
 }
 
+/** Tira a pausa de uma chave só (ela acabou de funcionar num teste). */
+export async function tirarPausa(grupo: Grupo, quem: string) {
+  local(grupo).mapa.delete(quem);
+  try {
+    await comandoRedis(["HDEL", CHAVE[grupo], quem]);
+  } catch {}
+}
+
 /** Esquece as pausas de um grupo (botão "Tentar de novo" do painel). */
 export async function limparPausas(grupo: Grupo) {
   local(grupo).mapa.clear();
