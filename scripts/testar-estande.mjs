@@ -175,6 +175,58 @@ teste("admin remove do placar, tira da fila e desliga o modo", () => {
   assert.equal(e.placarVovo.length > 0, true, "desligar não apaga o placar");
 });
 
+teste("admin pula a ligação de quem não responde: não entra no placar e a vez passa", () => {
+  const x = E.estadoInicial();
+  E.acaoDoAdmin(x, "ligar-modo", { ativo: true }, t);
+  E.acaoDoAdmin(x, "configurar", { aprovacaoManual: false }, t);
+  E.entrarNaFila(x, pid(20), "Calado", t);
+  E.entrarNaFila(x, pid(21), "Proxima", t);
+  E.avancar(x, t);
+  assert.equal(E.atender(x, pid(20), t + 1000, abertura).ok, true);
+  const audios = x.audio.n;
+  assert.equal(E.acaoDoAdmin(x, "pular", {}, t + 5000, tchau).ok, true);
+  assert.equal(x.chamada, null);
+  assert.equal(x.placarVovo.length, 0, "ligação pulada não vai para o placar");
+  assert.equal(x.audio.n, audios, "a Vó não se despede");
+  assert.equal(x.ultima.tipo, "fim", "o celular de quem foi pulado vê a tela de fim");
+  E.avancar(x, t + 6000);
+  assert.equal(x.chamada?.id, E.idPublico(pid(21)), "a próxima pessoa é chamada");
+  assert.equal(E.acaoDoAdmin(x, "pular", {}, t + 7000).ok, true, "também pula quem não tocou em Ligar");
+  assert.equal(E.acaoDoAdmin(x, "pular", {}, t + 8000).ok, false);
+});
+
+teste("admin corrige nome e pontos nos dois placares, e o nome corrigido não volta", () => {
+  const x = E.estadoInicial();
+  E.acaoDoAdmin(x, "ligar-modo", { ativo: true }, t);
+  E.entrarNaFila(x, pid(30), "Fulano", t);
+  E.acaoDoAdmin(x, "liberar", {}, t);
+  E.atender(x, pid(30), t, abertura);
+  E.acaoDoAdmin(x, "encerrar", {}, t + 30_000);
+  const id = E.idPublico(pid(30));
+  assert.equal(E.acaoDoAdmin(x, "editar-placar", { placar: "vovo", id, nome: "caralho" }, t).ok, false, "palavrão não entra nem pelo admin");
+  assert.equal(E.acaoDoAdmin(x, "editar-placar", { placar: "vovo", id, nome: "Visitante", truques: 12, duracaoS: 45 }, t).ok, true);
+  assert.deepEqual([x.placarVovo[0].nome, x.placarVovo[0].truques, x.placarVovo[0].duracaoS], ["Visitante", 9, 45]);
+  assert.equal(x.ultima.nome, "Visitante", "a TV também mostra o nome corrigido");
+  E.entrarNaFila(x, pid(30), "Fulano", t + 40_000);
+  E.acaoDoAdmin(x, "liberar", {}, t + 40_000);
+  E.atender(x, pid(30), t + 40_000, abertura);
+  E.acaoDoAdmin(x, "encerrar", {}, t + 50_000);
+  assert.equal(x.placarVovo[0].nome, "Visitante", "jogar de novo não traz o nome antigo");
+
+  E.iniciarQuiz(x, pid(31), "Beltrano", t);
+  E.registrarQuiz(x, pid(31), 300, 2, t);
+  E.iniciarQuiz(x, pid(32), "Ciclano", t);
+  E.registrarQuiz(x, pid(32), 800, 5, t);
+  const q = E.idPublico(pid(31));
+  assert.equal(E.acaoDoAdmin(x, "editar-placar", { placar: "quiz", id: q, nome: "Jogador", pontos: 1000 }, t).ok, true);
+  assert.deepEqual([x.placarQuiz[0].nome, x.placarQuiz[0].pontos], ["Jogador", 1000], "reordena pelo novo total");
+  E.iniciarQuiz(x, pid(31), "Beltrano", t);
+  assert.equal(x.placarQuiz[0].nome, "Jogador");
+  E.acaoDoAdmin(x, "tirar-do-placar", { placar: "vovo", id }, t);
+  assert.equal(x.ultima, null, "remover também tira o nome da tela de resultado");
+  assert.equal(E.acaoDoAdmin(x, "editar-placar", { placar: "vovo", id, nome: "Ana" }, t).ok, false);
+});
+
 // ---------- modo econômico de voz, contagem de voz e pausa do microfone ----------
 
 const testeDasFalas = F ? teste : (nome) => console.log(`--  pulado (precisa do Node 22.18+): ${nome}`);

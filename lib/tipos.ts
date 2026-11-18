@@ -71,6 +71,8 @@ export interface LinhaVovo {
   duracaoS: number;
   quando: number;
   vezes: number;
+  /** Nome corrigido pelo admin: não volta ao original se a pessoa jogar de novo. */
+  editado?: boolean;
 }
 
 export interface LinhaQuiz {
@@ -80,6 +82,7 @@ export interface LinhaQuiz {
   acertos: number;
   tentativas: number;
   quando: number;
+  editado?: boolean;
 }
 
 export interface UltimaLigacao {

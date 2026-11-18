@@ -219,9 +219,15 @@ export default function Admin() {
                 </li>
               ))}
             </ul>
-            <button onClick={() => fazer({ acao: "encerrar" })} className="mt-3 rounded-xl border-2 border-golpe px-4 py-2 font-bold text-golpe">
-              Encerrar a ligação agora
-            </button>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button onClick={() => fazer({ acao: "encerrar" })} className="rounded-xl border-2 border-golpe px-4 py-2 font-bold text-golpe">
+                Encerrar a ligação agora
+              </button>
+              <button onClick={() => fazer({ acao: "pular" })} className="rounded-xl border-2 border-noite/40 px-4 py-2 font-bold">
+                Pular (não vai para o placar)
+              </button>
+            </div>
+            <p className="mt-1 text-sm text-noite/60">Pular serve para quando a pessoa não responde: a ligação acaba na hora, sem despedida da Vó, e a vez passa para o próximo.</p>
           </>
         )}
       </section>
@@ -254,16 +260,18 @@ export default function Admin() {
           <h2 className="font-display text-xl font-extrabold">Placar da Vó</h2>
           <ol className="mt-2 space-y-1">
             {(visao.placarVovoCompleto || []).map((l, i) => (
-              <li key={l.id} className="flex items-center gap-2">
-                <span className="w-6 font-bold">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate">{l.nome}</span>
-                <span className="font-bold tabular-nums">
-                  {l.truques}/9 · {minutos(l.duracaoS)}
-                </span>
-                <button onClick={() => fazer({ acao: "tirar-do-placar", placar: "vovo", id: l.id })} aria-label={`Remover ${l.nome} do placar da Vó`} className="rounded border border-noite/30 px-2 text-sm">
-                  remover
-                </button>
-              </li>
+              <LinhaEditavel
+                key={l.id}
+                posicao={i + 1}
+                nome={l.nome}
+                resumo={`${l.truques}/9 · ${minutos(l.duracaoS)}`}
+                campos={[
+                  { chave: "truques", rotulo: "Truques (0 a 9)", valor: l.truques },
+                  { chave: "duracaoS", rotulo: "Tempo (segundos)", valor: l.duracaoS },
+                ]}
+                aoSalvar={(mudancas) => fazer({ acao: "editar-placar", placar: "vovo", id: l.id, ...mudancas })}
+                aoRemover={() => fazer({ acao: "tirar-do-placar", placar: "vovo", id: l.id })}
+              />
             ))}
             {!visao.placarVovoCompleto?.length && <li className="text-noite/60">Vazio.</li>}
           </ol>
@@ -272,16 +280,18 @@ export default function Admin() {
           <h2 className="font-display text-xl font-extrabold">Placar do quiz</h2>
           <ol className="mt-2 space-y-1">
             {(visao.placarQuizCompleto || []).map((l, i) => (
-              <li key={l.id} className="flex items-center gap-2">
-                <span className="w-6 font-bold">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate">{l.nome}</span>
-                <span className="font-bold tabular-nums">
-                  {l.pontos} · {l.tentativas}/3
-                </span>
-                <button onClick={() => fazer({ acao: "tirar-do-placar", placar: "quiz", id: l.id })} aria-label={`Remover ${l.nome} do placar do quiz`} className="rounded border border-noite/30 px-2 text-sm">
-                  remover
-                </button>
-              </li>
+              <LinhaEditavel
+                key={l.id}
+                posicao={i + 1}
+                nome={l.nome}
+                resumo={`${l.pontos} · ${l.tentativas}/3`}
+                campos={[
+                  { chave: "pontos", rotulo: "Pontos", valor: l.pontos },
+                  { chave: "acertos", rotulo: "Acertos", valor: l.acertos },
+                ]}
+                aoSalvar={(mudancas) => fazer({ acao: "editar-placar", placar: "quiz", id: l.id, ...mudancas })}
+                aoRemover={() => fazer({ acao: "tirar-do-placar", placar: "quiz", id: l.id })}
+              />
             ))}
             {!visao.placarQuizCompleto?.length && <li className="text-noite/60">Vazio.</li>}
           </ol>
@@ -430,5 +440,80 @@ export default function Admin() {
         </div>
       </section>
     </main>
+  );
+}
+
+/** Uma linha do placar no painel: mostra o nome e abre um formulário para corrigir nome e pontos. */
+function LinhaEditavel({
+  posicao,
+  nome,
+  resumo,
+  campos,
+  aoSalvar,
+  aoRemover,
+}: {
+  posicao: number;
+  nome: string;
+  resumo: string;
+  campos: { chave: string; rotulo: string; valor: number }[];
+  aoSalvar: (mudancas: Record<string, unknown>) => Promise<void>;
+  aoRemover: () => Promise<void>;
+}) {
+  const [aberta, setAberta] = useState(false);
+  const [novoNome, setNovoNome] = useState(nome);
+  const [valores, setValores] = useState<Record<string, string>>({});
+
+  function abrir() {
+    setNovoNome(nome);
+    setValores(Object.fromEntries(campos.map((c) => [c.chave, String(c.valor)])));
+    setAberta(true);
+  }
+
+  async function salvar(e: React.FormEvent) {
+    e.preventDefault();
+    const mudancas: Record<string, unknown> = {};
+    if (novoNome.trim() !== nome) mudancas.nome = novoNome;
+    for (const c of campos) if (valores[c.chave] !== String(c.valor)) mudancas[c.chave] = Number(valores[c.chave]);
+    if (Object.keys(mudancas).length) await aoSalvar(mudancas);
+    setAberta(false);
+  }
+
+  return (
+    <li className="py-1">
+      <div className="flex items-center gap-2">
+        <span className="w-6 font-bold">{posicao}</span>
+        <span className="min-w-0 flex-1 truncate">{nome}</span>
+        <span className="font-bold tabular-nums">{resumo}</span>
+        <button onClick={() => (aberta ? setAberta(false) : abrir())} aria-label={`Editar ${nome}`} className="rounded border border-noite/30 px-2 text-sm">
+          {aberta ? "fechar" : "editar"}
+        </button>
+        <button onClick={aoRemover} aria-label={`Remover ${nome}`} className="rounded border border-golpe/50 px-2 text-sm text-golpe">
+          remover
+        </button>
+      </div>
+      {aberta && (
+        <form onSubmit={salvar} className="mt-2 grid gap-2 rounded-xl bg-noite/5 p-3 sm:grid-cols-3">
+          <label className="text-sm sm:col-span-3">
+            Nome
+            <input value={novoNome} onChange={(e) => setNovoNome(e.target.value)} maxLength={16} className="mt-1 w-full rounded-lg border-2 border-noite/20 px-2 py-1 text-base" />
+          </label>
+          {campos.map((c) => (
+            <label key={c.chave} className="text-sm">
+              {c.rotulo}
+              <input
+                type="number"
+                inputMode="numeric"
+                value={valores[c.chave] ?? ""}
+                onChange={(e) => setValores((v) => ({ ...v, [c.chave]: e.target.value }))}
+                className="mt-1 w-full rounded-lg border-2 border-noite/20 px-2 py-1 text-base"
+              />
+            </label>
+          ))}
+          <button type="submit" className="self-end rounded-lg bg-tinta px-3 py-2 font-bold text-white">
+            Salvar
+          </button>
+        </form>
+      )}
+    </li>
   );
 }
